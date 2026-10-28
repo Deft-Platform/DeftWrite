@@ -1,0 +1,36 @@
+# deft.yml — service manifest
+schema: 1
+name: deftwrite
+brand: DeftWrite
+summary: >
+  DeftWrite is the writing engine for DeftPlatform — a deep-work focused
+  authoring environment with personas, AI chat, inline commenting, and
+  structured document management. Converts ideas to drafts, drafts to
+  published content across channels.
+tier: 2
+status: development
+
+repo:
+  dir: ~/code/deft-platform/DeftWrite
+  origin: https://github.com/Deft-Platform/DeftWrite.git
+  prod_ref: origin/main
+
+stack: [react, typescript, vite, tailwindcss, tiptap, shadcn-ui]
+
+deploy:
+  mode: static  # Vite build → static hosting
+
+sdlc:
+  gate: none    # prototype stage
+  ci: none
+  test: unknown
+  review: pr-required
+
+depends_on: []
+
+known_issues:
+  - "Prototype is a single HTML file in the old deft-author repo; migrating to proper React component architecture."
+  - "No external AI provider integrated yet — placeholder for DeftPlatform's inference layer."
+  - "Settings not persisted; draft state lost on refresh."
+  - "Focus mode uses static HTML copy, not live Tiptap instance."
+  - "No version history, export, voice input, or drag-and-drop yet."
