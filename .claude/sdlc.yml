@@ -1,0 +1,33 @@
+# Delivery contract for the dev-loop skill. INFERRED — review every line.
+# A wrong test command that runs nothing is worse than no contract at all.
+schema: 1
+name: deftwrite
+vcs:
+  host: github
+  default_branch: main
+  branch_prefix: feat/
+qa:
+  lint: npm run lint
+staging:
+  mode: local
+  up: npm run dev
+  url: http://localhost:3000
+browser:
+  base_url: http://localhost:3000
+  login:
+    how: unknown
+  smoke:
+  - /
+ship:
+  gate: none
+  ci_host: none
+  push: git push origin HEAD
+  pr: gh pr create --draft --fill
+approval:
+  required_for:
+  - push
+  - merge
+  - deploy
+  - migrations
+tier: 2
+source: deft.yml
