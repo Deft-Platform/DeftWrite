@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import { playPomodoroSound } from '@/lib/pomodoraudio';
 import type {
   Persona, Idea, Draft, Comment, ChatMessage, AIConfig, FontFamily,
-  SidebarView, PersonaId, DraftStatus, ContentType
+  SidebarView, PersonaId, DraftStatus, ContentType, PomodoroState
 } from '@/types';
 
-interface AppState {
+interface AppState extends PomodoroState {
   // Personas
   activePersonaId: PersonaId;
   personas: Record<PersonaId, Persona>;
@@ -56,12 +57,7 @@ interface AppState {
   fontFamily: FontFamily;
   setFontFamily: (font: FontFamily) => void;
 
-  // Pomodoro
-  pomodoro: {
-    timeLeft: number;
-    isRunning: boolean;
-    isWork: boolean;
-  };
+  // Pomodoro actions
   togglePomodoro: () => void;
   resetPomodoro: () => void;
 
@@ -167,6 +163,41 @@ const defaultPersonas: Record<PersonaId, Persona> = {
   },
 };
 
+const POMODORO_KEY = 'deftwrite-pomodoro-daily';
+
+function getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+function loadDailyPomodoro(): { sessions: number; date: string; streak: number } {
+  try {
+    const raw = localStorage.getItem(POMODORO_KEY);
+    if (!raw) return { sessions: 0, date: getTodayKey(), streak: 0 };
+    const parsed = JSON.parse(raw);
+    const today = getTodayKey();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    if (parsed.date === today) {
+      return { sessions: parsed.sessions || 0, date: today, streak: parsed.streak || 0 };
+    }
+    if (parsed.date === yesterday) {
+      return { sessions: 0, date: today, streak: parsed.streak || 0 };
+    }
+    // Streak broken
+    return { sessions: 0, date: today, streak: 0 };
+  } catch {
+    return { sessions: 0, date: getTodayKey(), streak: 0 };
+  }
+}
+
+function saveDailyPomodoro(sessions: number, date: string, streak: number): void {
+  try {
+    localStorage.setItem(POMODORO_KEY, JSON.stringify({ sessions, date, streak }));
+  } catch {
+    // Storage unavailable — continue without persistence.
+  }
+}
+
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -201,13 +232,72 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
   });
   const [fontFamily, setFontFamily] = useState<FontFamily>('serif');
-  const [pomodoro, setPomodoro] = useState({ timeLeft: 25 * 60, isRunning: false, isWork: true });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [activeContentType, setActiveContentTypeState] = useState<ContentType>('article');
   const [outlineSections, setOutlineSections] = useState<{ id: string; title: string; visible: boolean }[]>([]);
 
   const activeDraft = activeDraftId ? drafts[activePersonaId]?.find(d => d.id === activeDraftId) ?? null : null;
+
+  // Pomodoro state — initialized from localStorage or defaults
+  const dailyData = useRef(loadDailyPomodoro());
+  const [pomodoro, setPomodoro] = useState<PomodoroState>({
+    timeLeft: 25 * 60,
+    isRunning: false,
+    isWork: true,
+    workDuration: 25 * 60,
+    breakDuration: 5 * 60,
+    longBreakDuration: 15 * 60,
+    sessionsCompletedInCycle: 0,
+    dailySessions: dailyData.current.sessions,
+    sessionStreak: dailyData.current.streak,
+  });
+
+  const pomodoroRef = useRef(pomodoro);
+  pomodoroRef.current = pomodoro;
+
+  // Interval-based countdown
+  useEffect(() => {
+    if (!pomodoro.isRunning) return;
+
+    const interval = setInterval(() => {
+      const current = pomodoroRef.current;
+      const newTimeLeft = current.timeLeft - 1;
+
+      if (newTimeLeft <= 0) {
+        // Session complete
+        playPomodoroSound();
+
+        if (current.isWork) {
+          const nextSessions = current.dailySessions + 1;
+          const nextCycle = current.sessionsCompletedInCycle + 1;
+          let newState: PomodoroState = {
+            ...current,
+            timeLeft: nextCycle >= 4 ? current.longBreakDuration : current.breakDuration,
+            isRunning: false,
+            isWork: false,
+            dailySessions: nextSessions,
+            sessionsCompletedInCycle: nextCycle,
+          };
+          dailyData.current = { ...dailyData.current, sessions: nextSessions };
+          saveDailyPomodoro(nextSessions, dailyData.current.date, nextSessions > 0 ? current.sessionStreak + 1 : current.sessionStreak);
+          setPomodoro(newState);
+        } else {
+          // Break ends — start new work session
+          setPomodoro(prev => ({
+            ...prev,
+            timeLeft: prev.workDuration,
+            isWork: true,
+            isRunning: false,
+          }));
+        }
+      } else {
+        setPomodoro(prev => ({ ...prev, timeLeft: newTimeLeft }));
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [pomodoro.isRunning]);
 
   const setActivePersona = useCallback((id: PersonaId) => {
     setActivePersonaState(id);
@@ -347,11 +437,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const togglePomodoro = useCallback(() => {
-    setPomodoro(prev => ({ ...prev, isRunning: !prev.isRunning }));
+    setPomodoro(prev => {
+      if (!prev.isRunning) {
+        // Start or resume — ensure we have the right timeLeft for current session type
+        if (prev.isWork && prev.timeLeft === prev.workDuration && prev.sessionsCompletedInCycle === 0 && prev.dailySessions === 0) {
+          return { ...prev, isRunning: true };
+        }
+        // If resuming after session end, set proper duration
+        if (!prev.isWork) {
+          const longBreak = prev.sessionsCompletedInCycle >= 4;
+          return {
+            ...prev,
+            isRunning: true,
+            timeLeft: longBreak ? prev.longBreakDuration : prev.breakDuration,
+          };
+        }
+        return { ...prev, isRunning: true };
+      }
+      return { ...prev, isRunning: false };
+    });
   }, []);
 
   const resetPomodoro = useCallback(() => {
-    setPomodoro({ timeLeft: 25 * 60, isRunning: false, isWork: true });
+    setPomodoro({
+      timeLeft: 25 * 60,
+      isRunning: false,
+      isWork: true,
+      workDuration: 25 * 60,
+      breakDuration: 5 * 60,
+      longBreakDuration: 15 * 60,
+      sessionsCompletedInCycle: 0,
+      dailySessions: 0,
+      sessionStreak: 0,
+    });
+    dailyData.current = { sessions: 0, date: getTodayKey(), streak: 0 };
+    saveDailyPomodoro(0, getTodayKey(), 0);
   }, []);
 
   const setAIConfig = useCallback((config: Partial<AIConfig>) => {
@@ -376,7 +496,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       sidebarView, activeThreadId, setSidebarView, setActiveThread: setActiveThreadId,
       aiConfig, setAIConfig,
       fontFamily, setFontFamily,
-      pomodoro, togglePomodoro, resetPomodoro,
+      ...pomodoro,
+      togglePomodoro, resetPomodoro,
       settingsOpen, openSettings, closeSettings,
       focusMode, toggleFocusMode,
     }}>

@@ -91,6 +91,12 @@ export interface PomodoroState {
   timeLeft: number;
   isRunning: boolean;
   isWork: boolean;
+  workDuration: number;
+  breakDuration: number;
+  longBreakDuration: number;
+  sessionsCompletedInCycle: number;
+  dailySessions: number;
+  sessionStreak: number;
 }
 
 export type FontFamily = 'serif' | 'sans' | 'mono';
