@@ -1,5 +1,4 @@
-# Delivery contract for the dev-loop skill. INFERRED — review every line.
-# A wrong test command that runs nothing is worse than no contract at all.
+# Delivery contract for DeftWrite
 schema: 1
 name: deftwrite
 vcs:
@@ -7,13 +6,15 @@ vcs:
   default_branch: main
   branch_prefix: feat/
 qa:
-  lint: npm run lint
+  lint: bun run lint
+  typecheck: bun run typecheck
 staging:
   mode: local
-  up: npm run dev
-  url: http://localhost:3000
+  up: bun run dev:all
+  url: http://localhost:5173
+  down: docker compose down
 browser:
-  base_url: http://localhost:3000
+  base_url: http://localhost:5173
   login:
     how: unknown
   smoke:
@@ -30,4 +31,4 @@ approval:
   - deploy
   - migrations
 tier: 2
-source: deft.yml
+source: .claude/sdlc.yml
