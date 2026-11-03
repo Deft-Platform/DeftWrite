@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useApp } from '@/contexts/AppContext';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface EditorToolbarProps {
   onAddComment: () => void;
@@ -56,9 +56,9 @@ function EditorToolbar({ onAddComment, onFocusMode, onToggleFormat, activeFormat
       <button
         className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700/60 transition-colors"
         onClick={onFocusMode}
-        title="Focus Mode"
+        title="Focus Mode (Ctrl+Shift+F)"
       >
-        <i data-lucide="eye" className="w-4 h-4" />
+        <i data-lucide="maximize" className="w-4 h-4" />
       </button>
     </div>
   );
@@ -113,7 +113,10 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
 }
 
 export function MainEditor() {
-  const { aiConfig, fontFamily, updateDraft } = useApp();
+  const { aiConfig, fontFamily, updateDraft, focusMode, toggleFocusMode } = useApp();
+  const [title, setTitle] = useState('');
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -122,8 +125,12 @@ export function MainEditor() {
     ],
     content: '',
     onUpdate: ({ editor }) => {
+      if (!editor) return;
       const json = editor.getJSON();
       const text = editor.getText();
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      setWordCount(words);
+      setCharCount(text.length);
       updateDraft('draft-temp', { content: JSON.stringify(json) });
     },
     editorProps: {
@@ -139,6 +146,23 @@ export function MainEditor() {
       // Could load from activeDraft.content here
     }
   }, [editor]);
+
+  // Esc key to exit focus mode
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.key === 'Escape' || e.code === 'Escape') && focusMode) {
+        e.preventDefault();
+        toggleFocusMode();
+      }
+      // Ctrl+Shift+F to enter focus mode
+      if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        toggleFocusMode();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [focusMode, toggleFocusMode]);
 
   const handleToggleFormat = useCallback((action: string) => {
     if (!editor) return;
@@ -174,25 +198,50 @@ export function MainEditor() {
     ].filter((v): v is string => !!v))
     : [];
 
-  const wordCount = editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0;
-  const charCount = editor?.getText().length || 0;
-
   return (
-    <section className="flex-1 flex flex-col relative bg-slate-950">
-      <EditorToolbar
-        onAddComment={() => {}}
-        onFocusMode={() => {}}
-        onToggleFormat={handleToggleFormat}
-        activeFormats={activeFormats}
-      />
-      <EditorContentInner
-        editor={editor}
-        title=""
-        onTitleChange={() => {}}
-        wordCount={wordCount}
-        charCount={charCount}
-        fontFamily={fontFamily}
-      />
+    <section className={`flex-1 flex flex-col relative bg-slate-950 transition-all duration-500 ${
+      focusMode ? 'items-center justify-center' : ''
+    }`}>
+      {/* Focus mode exit hint */}
+      {focusMode && (
+        <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+          <span className="text-xs text-slate-700 bg-slate-900/80 px-3 py-1 rounded-full backdrop-blur-sm">
+            Press Esc to exit focus mode
+          </span>
+        </div>
+      )}
+      {!focusMode && (
+        <>
+          <EditorToolbar
+            onAddComment={() => {}}
+            onFocusMode={toggleFocusMode}
+            onToggleFormat={handleToggleFormat}
+            activeFormats={activeFormats}
+          />
+          <EditorContentInner
+            editor={editor}
+            title={title}
+            onTitleChange={setTitle}
+            wordCount={wordCount}
+            charCount={charCount}
+            fontFamily={fontFamily}
+          />
+        </>
+      )}
+      {/* Focus mode: show only content + pomodoro */}
+      {focusMode && (
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto">
+          <input
+            type="text"
+            placeholder="Untitled"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            className="w-full bg-transparent text-4xl font-bold outline-none mb-8 placeholder:text-slate-800 text-center"
+          />
+          <div className="ProseMirror prose-invert w-full min-h-[60vh]" />
+          <EditorContent editor={editor} />
+        </div>
+      )}
     </section>
   );
 }
