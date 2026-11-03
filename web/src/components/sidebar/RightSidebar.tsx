@@ -21,11 +21,157 @@ const AI_RESPONSES: Record<string, string> = {
   evidence: "Here are some evidence points you could incorporate:\n\n1. Gartner (2024): 73% of enterprises plan to increase AI investment\n2. McKinsey report on knowledge work productivity\n3. Internal data from your last quarter\n4. Industry benchmark from the latest state of the industry report",
 };
 
+function BookOutlinePanel() {
+  const { outlineSections, addOutlineSection } = useApp();
+  const [newSection, setNewSection] = useState('');
+  const [mode, setMode] = useState<'chapters' | 'parts'>('chapters');
+
+  const handleAdd = () => {
+    if (newSection.trim()) {
+      addOutlineSection(newSection.trim());
+      setNewSection('');
+    }
+  };
+
+  return (
+    <div className="px-3 py-3 border-t border-slate-800/50">
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Book Outline</label>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setMode('chapters')}
+            className={`px-1.5 py-0.5 text-[9px] rounded transition-colors ${
+              mode === 'chapters' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-600 hover:text-slate-400'
+            }`}
+          >
+            Chapters
+          </button>
+          <button
+            onClick={() => setMode('parts')}
+            className={`px-1.5 py-0.5 text-[9px] rounded transition-colors ${
+              mode === 'parts' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-600 hover:text-slate-400'
+            }`}
+          >
+            Parts
+          </button>
+        </div>
+      </div>
+      <div className="space-y-1 mb-2">
+        {outlineSections.length === 0 && (
+          <div className="text-[10px] text-slate-700 italic text-center py-3">No outline sections yet</div>
+        )}
+        {outlineSections.map(section => (
+          <div key={section.id} className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/40 text-[11px] text-slate-400 group">
+            <i data-lucide={mode === 'chapters' ? 'file-text' : 'book-open'} className="w-3 h-3 shrink-0" />
+            <span className="truncate flex-1">{section.title}</span>
+            <button className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-600 hover:text-slate-400 transition-all">
+              <i data-lucide="eye" className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          value={newSection}
+          onChange={e => setNewSection(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder={`Add ${mode}...`}
+          className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded px-2 py-1 text-xs outline-none focus:border-indigo-500/50 placeholder:text-slate-600"
+        />
+        <button
+          onClick={handleAdd}
+          className="px-2 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded text-[10px] transition-colors"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SocialPostPanel() {
+  const [postMode, setPostMode] = useState<'single' | 'thread' | 'cross-platform'>('single');
+
+  const PLATFORMS = [
+    { id: 'twitter', label: 'X / Twitter', icon: 'twitter', maxLength: 280 },
+    { id: 'linkedin', label: 'LinkedIn', icon: 'linkedin', maxLength: 3000 },
+    { id: 'mastodon', label: 'Mastodon', icon: 'message-circle', maxLength: 500 },
+  ];
+
+  return (
+    <div className="px-3 py-3 border-t border-slate-800/50">
+      <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Social Post Mode</label>
+      <div className="flex gap-1 mb-3">
+        {[
+          { id: 'single' as const, label: 'Single', icon: 'file-text' },
+          { id: 'thread' as const, label: 'Thread', icon: 'list' },
+          { id: 'cross-platform' as const, label: 'Multi', icon: 'share-2' },
+        ].map(pm => (
+          <button
+            key={pm.id}
+            onClick={() => setPostMode(pm.id)}
+            className={`flex-1 flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-md text-[10px] transition-all ${
+              postMode === pm.id
+                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                : 'text-slate-600 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
+            }`}
+          >
+            <i data-lucide={pm.icon} className="w-3.5 h-3.5" />
+            <span className="font-medium">{pm.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {postMode === 'thread' && (
+        <div className="space-y-1.5 mb-3">
+          <div className="flex items-center justify-between text-[10px] text-slate-500">
+            <span>Thread tweets</span>
+            <span className="text-slate-600">1 / 10 max</span>
+          </div>
+          {[1].map(i => (
+            <div key={i} className="flex gap-2 items-start">
+              <span className="text-[9px] text-slate-600 w-4 shrink-0 flex justify-end pt-1">{i}</span>
+              <textarea
+                placeholder={`Tweet ${i}...`}
+                rows={2}
+                maxLength={280}
+                className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded px-2 py-1.5 text-xs outline-none focus:border-indigo-500/50 placeholder:text-slate-600 resize-none"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {postMode === 'cross-platform' && (
+        <div className="space-y-2 mb-3">
+          {PLATFORMS.map(plat => (
+            <div key={plat.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/40 group">
+              <i data-lucide={plat.icon} className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] text-slate-400">{plat.label}</div>
+                <div className="text-[9px] text-slate-600">{plat.maxLength} chars</div>
+              </div>
+              <button className="p-0.5 text-slate-700 hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-all">
+                <i data-lucide="edit-3" className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {postMode === 'single' && (
+        <div className="text-[10px] text-slate-600 italic text-center py-3">Select a platform from your persona settings to publish</div>
+      )}
+    </div>
+  );
+}
+
 export function RightSidebar() {
   const {
     sidebarView, activeThreadId, chatMessages, activeDraftId,
     addChatMessage, setSidebarView, setActiveThread,
-    comments, dismissComment
+    comments, dismissComment, activeContentType
   } = useApp();
 
   const [input, setInput] = useState('');
@@ -150,6 +296,10 @@ export function RightSidebar() {
           )}
         </div>
       </div>
+
+      {/* Dynamic panel based on content type */}
+      {activeContentType === 'book' && <BookOutlinePanel />}
+      {activeContentType === 'social' && <SocialPostPanel />}
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <ScrollArea className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar text-sm">

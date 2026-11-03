@@ -5,6 +5,12 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { useApp } from '@/contexts/AppContext';
 import { useCallback, useEffect, useState } from 'react';
 
+const PLACEHOLDERS: Record<string, string> = {
+  article: 'Start writing your article...\n\nTip: Use H2 and H3 headings to create sections. The outline panel will auto-generate from your headings.',
+  book: 'Begin your book...\n\nTip: Create parts and chapters in the outline panel on the right. Each chapter can be expanded into sections.',
+  social: 'Draft your social post...\n\nChoose between single post, thread, or cross-platform mode below.',
+};
+
 interface EditorToolbarProps {
   onAddComment: () => void;
   onFocusMode: () => void;
@@ -71,9 +77,10 @@ interface EditorContentProps {
   wordCount: number;
   charCount: number;
   fontFamily: string;
+  contentType: string;
 }
 
-function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount, fontFamily }: EditorContentProps) {
+function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount, fontFamily, contentType }: EditorContentProps) {
   const readTime = Math.max(1, Math.ceil(wordCount / 200));
   const fontMap: Record<string, string> = {
     serif: "'Playfair Display', serif",
@@ -113,7 +120,7 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
 }
 
 export function MainEditor() {
-  const { aiConfig, fontFamily, updateDraft, focusMode, toggleFocusMode } = useApp();
+  const { aiConfig, fontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType } = useApp();
   const [title, setTitle] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
@@ -121,7 +128,7 @@ export function MainEditor() {
     extensions: [
       StarterKit,
       Underline,
-      Placeholder.configure({ placeholder: 'Start writing...' }),
+      Placeholder.configure({ placeholder: PLACEHOLDERS[activeContentType] || PLACEHOLDERS.article }),
     ],
     content: '',
     onUpdate: ({ editor }) => {
@@ -225,6 +232,7 @@ export function MainEditor() {
             wordCount={wordCount}
             charCount={charCount}
             fontFamily={fontFamily}
+            contentType={activeContentType}
           />
         </>
       )}

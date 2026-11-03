@@ -31,8 +31,14 @@ function PersonaSelector() {
   );
 }
 
+const CONTENT_TYPES = [
+  { id: 'article', label: 'Article', icon: 'file-text', placeholder: 'Start writing your article...\n\nTip: Use H2 and H3 headings to create sections. The outline panel will auto-generate from your headings.' },
+  { id: 'book', label: 'Book', icon: 'book', placeholder: 'Begin your book...\n\nTip: Create parts and chapters in the outline panel on the right. Each chapter can be expanded into sections.' },
+  { id: 'social', label: 'Social', icon: 'share-2', placeholder: 'Draft your social post...\n\nChoose between single post, thread, or cross-platform mode below.' },
+] as const;
+
 export function LeftSidebar() {
-  const { personas, ideas, activePersonaId, openDraft, drafts, createDraft } = useApp();
+  const { personas, ideas, activePersonaId, openDraft, drafts, createDraft, activeContentType, setActiveContentType } = useApp();
   const [showNewDraft, setShowNewDraft] = useState(false);
   const [newDraftTitle, setNewDraftTitle] = useState('');
   const [newDraftType, setNewDraftType] = useState<'article' | 'book' | 'social'>('article');
@@ -147,6 +153,28 @@ export function LeftSidebar() {
             {personaDrafts.length === 0 && (
               <div className="text-[10px] text-slate-700 px-2 italic">No drafts</div>
             )}
+          </div>
+        </div>
+
+        {/* Content Type Selector */}
+        <div className="p-3 border-t border-slate-800">
+          <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1.5 block">Content Type</label>
+          <div className="flex gap-1">
+            {CONTENT_TYPES.map(ct => (
+              <button
+                key={ct.id}
+                onClick={() => setActiveContentType(ct.id as 'article' | 'book' | 'social')}
+                className={`flex-1 flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-md text-[10px] transition-all ${
+                  activeContentType === ct.id
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
+                }`}
+                title={ct.placeholder.split('\n')[0]}
+              >
+                <i data-lucide={ct.icon} className="w-3.5 h-3.5" />
+                <span className="font-medium">{ct.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
