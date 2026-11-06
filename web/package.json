@@ -25,7 +25,7 @@
     "@radix-ui/react-tabs": "^1.2.2-rc.1791984254107",
     "@radix-ui/react-tooltip": "^1.4.2-rc.1791984254107",
     "@tailwindcss/vite": "^4.0.0",
-    "@tanstack/react-query": "^5.66.0",
+    "@tanstack/react-query": "^4.36.0",
     "@tiptap/extension-placeholder": "^2.11.5",
     "@tiptap/extension-underline": "^2.11.5",
     "@tiptap/react": "^2.11.5",
@@ -41,10 +41,12 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "playwright": "^1.64.1",
     "postcss": "^8.5.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",

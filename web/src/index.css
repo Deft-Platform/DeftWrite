@@ -147,7 +147,7 @@
 
 /* Toolbar button active state */
 .tb-active {
-  @apply bg-indigo-500/30 text-indigo-300 !important;
+  @apply bg-indigo-500/30 text-indigo-300;
 }
 
 /* Pomodoro progress ring */
