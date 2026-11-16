@@ -180,10 +180,15 @@ export const changesRouter = router({
 
       if (changeReq.oldContent && changeReq.sectionId) {
         // Restore previous section content
+        const [prevSection] = await ctx.db.select()
+          .from(sections)
+          .where(eq(sections.id, changeReq.sectionId))
+          .limit(1);
+
         const [updatedSection] = await ctx.db.update(sections)
           .set({
             content: changeReq.oldContent,
-            charEnd: changeReq.sectionId.length + changeReq.oldContent.length,
+            charEnd: (prevSection?.charStart ?? 0) + changeReq.oldContent.length,
           })
           .where(eq(sections.id, changeReq.sectionId))
           .returning();

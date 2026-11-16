@@ -58,7 +58,7 @@ export const sectionsRouter = router({
       let charStart = 0;
       if (existingSections.length > 0) {
         const last = existingSections[existingSections.length - 1] as typeof sections.$inferSelect;
-        charStart = (last.charEnd ?? 0) + (last.charStart ?? 0) + 100;
+        charStart = (last.charEnd ?? 0);
       }
 
       const [row] = await ctx.db.insert(sections).values({
@@ -160,7 +160,17 @@ export const sectionsRouter = router({
 
       if (!targetSection) return null;
 
-      const mergedContent = (targetSection.content || '') + '\n\n' + (input.sourceId === input.targetId ? '' : '');
+      // Fetch source section content to actually merge it
+      let sourceContent = '';
+      if (input.sourceId !== input.targetId) {
+        const [sourceSection] = await ctx.db.select()
+          .from(sections)
+          .where(eq(sections.id, input.sourceId))
+          .limit(1);
+        sourceContent = sourceSection?.content ?? '';
+      }
+
+      const mergedContent = (targetSection.content || '') + '\n\n' + sourceContent;
       const [updatedTarget] = await ctx.db.update(sections)
         .set({
           content: mergedContent,

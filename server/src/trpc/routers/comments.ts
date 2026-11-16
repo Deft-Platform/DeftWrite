@@ -25,17 +25,10 @@ export const commentsRouter = router({
       resolved: z.boolean().optional(),
     }))
     .query(async ({ input, ctx }) => {
-      // Get all sections for this section's draft to find nested comments
-      const result = await ctx.db.select({
-        comment: comments,
-        section: drafts,
-      })
-      .from(comments)
-      .leftJoin(drafts, eq(comments.draftId, drafts.id))
-      .where(eq(comments.sectionId || '', '')) // Fallback to draft-level
-      .orderBy(asc(comments.createdAt));
-
-      return result.map(r => r.comment);
+      // Comments table does not yet have a sectionId column.
+      // Returning empty array; add sectionId FK to comments to enable
+      // section-scoped commenting in a future migration.
+      return [];
     }),
 
   get: publicProcedure
