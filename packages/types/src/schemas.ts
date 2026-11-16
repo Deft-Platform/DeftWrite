@@ -238,6 +238,106 @@ export const paginatedResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
     limit: z.number().int(),
   });
 
+// --- Section ---
+export const createSectionSchema = z.object({
+  draftId: z.string(),
+  outlineId: z.string().nullish(),
+  parentId: z.string().nullish(),
+  title: z.string().min(1).max(200).default('Untitled'),
+  level: z.number().int().min(1).max(3).default(1),
+  order: z.number().int().default(0),
+  content: z.string().default(''),
+});
+
+export const sectionSchema = createSectionSchema.extend({
+  id: z.string(),
+  charStart: z.number().int().default(0),
+  charEnd: z.number().int().nullable(),
+  status: z.enum(['active', 'archived', 'merged']).default('active'),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export const updateSectionSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  content: z.string().optional(),
+  level: z.number().int().min(1).max(3).optional(),
+  order: z.number().int().optional(),
+});
+
+// --- Change Request ---
+export const createChangeRequestSchema = z.object({
+  draftId: z.string(),
+  sectionId: z.string().nullish(),
+  author: z.enum(['human', 'AI']).default('human'),
+  type: z.enum(['edit', 'rewrite', 'add_section', 'remove_section', 'review']).default('edit'),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  oldContent: z.string().optional(),
+  newContent: z.string().optional(),
+});
+
+export const changeRequestSchema = createChangeRequestSchema.extend({
+  id: z.string(),
+  userId: z.string().nullable(),
+  status: z.enum(['pending', 'approved', 'rejected', 'applied', 'cancelled']).default('pending'),
+  reviewNotes: z.string().nullable(),
+  reviewedBy: z.string().nullable(),
+  reviewedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export const updateChangeRequestSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'applied', 'cancelled']).optional(),
+  reviewNotes: z.string().max(2000).optional(),
+  reviewedBy: z.string().optional(),
+});
+
+// --- Section Version ---
+export const createSectionVersionSchema = z.object({
+  sectionId: z.string(),
+  draftId: z.string(),
+  content: z.string(),
+  wordCount: z.number().int().default(0),
+  checkpointName: z.string().optional(),
+  changeRequestId: z.string().nullish(),
+});
+
+export const sectionVersionSchema = createSectionVersionSchema.extend({
+  id: z.string(),
+  userId: z.string().nullable(),
+  createdAt: z.coerce.date(),
+});
+
+// --- Visual ---
+export const visualRoleSchema = z.enum(['hero', 'illustration', 'diagram', 'chart', 'icon']);
+export const visualStatusSchema = z.enum(['queued', 'generating', 'done', 'failed']);
+
+export const createVisualSchema = z.object({
+  draftId: z.string(),
+  role: visualRoleSchema,
+  prompt: z.string().min(1).max(500),
+  status: visualStatusSchema.default('queued'),
+});
+
+export const visualSchema = createVisualSchema.extend({
+  id: z.string(),
+  url: z.string().url().nullable().default(null),
+  width: z.number().int().positive().nullish(),
+  height: z.number().int().positive().nullish(),
+  createdAt: z.coerce.date(),
+});
+
+export const updateVisualSchema = z.object({
+  role: visualRoleSchema.optional(),
+  prompt: z.string().min(1).max(500).optional(),
+  status: visualStatusSchema.optional(),
+  url: z.string().url().nullable().optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+});
+
 // --- Re-exports ---
 export type User = z.infer<typeof userSchema>;
 export type CreateDraft = z.infer<typeof createDraftSchema>;
@@ -255,3 +355,16 @@ export type AiConfig = z.infer<typeof aiConfigSchema>;
 export type Suggestion = z.infer<typeof suggestionSchema>;
 export type Version = z.infer<typeof versionSchema>;
 export type ProductivityStats = z.infer<typeof productivityStatsSchema>;
+export type Visual = z.infer<typeof visualSchema>;
+export type CreateVisual = z.infer<typeof createVisualSchema>;
+export type UpdateVisual = z.infer<typeof updateVisualSchema>;
+export type VisualRole = z.infer<typeof visualRoleSchema>;
+export type VisualStatus = z.infer<typeof visualStatusSchema>;
+export type Section = z.infer<typeof sectionSchema>;
+export type CreateSection = z.infer<typeof createSectionSchema>;
+export type UpdateSection = z.infer<typeof updateSectionSchema>;
+export type ChangeRequest = z.infer<typeof changeRequestSchema>;
+export type CreateChangeRequest = z.infer<typeof createChangeRequestSchema>;
+export type UpdateChangeRequest = z.infer<typeof updateChangeRequestSchema>;
+export type SectionVersion = z.infer<typeof sectionVersionSchema>;
+export type CreateSectionVersion = z.infer<typeof createSectionVersionSchema>;

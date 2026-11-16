@@ -100,3 +100,18 @@ export interface PomodoroState {
 }
 
 export type FontFamily = 'serif' | 'sans' | 'mono';
+
+export type VisualStatus = 'queued' | 'generating' | 'done' | 'failed';
+export type VisualRole = 'hero' | 'illustration' | 'diagram' | 'chart' | 'icon';
+
+export interface Visual {
+  id: string;
+  draftId: string;
+  role: VisualRole;
+  prompt: string;
+  status: VisualStatus;
+  url?: string;
+  width?: number;
+  height?: number;
+  createdAt: number;
+}

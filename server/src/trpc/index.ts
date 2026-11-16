@@ -5,6 +5,9 @@ import { draftsRouter } from './routers/drafts';
 import { ideasRouter } from './routers/ideas';
 import { chatRouter } from './routers/chat';
 import { settingsRouter } from './routers/settings';
+import { sectionsRouter } from './routers/sections';
+import { commentsRouter } from './routers/comments';
+import { changesRouter } from './routers/changes';
 
 const trpc = initTRPC.context<Context>().create();
 
@@ -17,6 +20,9 @@ export const appRouter = trpc.router({
   ideas: ideasRouter,
   chat: chatRouter,
   settings: settingsRouter,
+  sections: sectionsRouter,
+  comments: commentsRouter,
+  changes: changesRouter,
 });
 
 export type AppRouter = typeof appRouter;

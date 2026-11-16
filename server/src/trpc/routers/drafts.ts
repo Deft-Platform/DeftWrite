@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { publicProcedure, router } from '../index';
-
+import { drafts, ideas } from '@deftwrite/db';
+import { eq, and, desc } from 'drizzle-orm';
 
 export const draftsRouter = router({
   list: publicProcedure
@@ -9,52 +10,37 @@ export const draftsRouter = router({
       userId: z.string().optional(),
     }))
     .query(async ({ input, ctx }) => {
-      const { drafts } = await import('@deftwrite/db');
-
-      // TODO: Replace with real DB query
-      // const result = await ctx.db.select().from(drafts)
-      //   .where(input.personaId ? eq(drafts.personaId, input.personaId) : undefined)
-      //   .limit(20);
-
-      // Stub data for development
-      return [
-        { id: 'draft-1', title: 'Q3 Report Analysis', content: '', status: 'draft', personaId: 'biz', userId: 'user-1', createdAt: new Date() },
-        { id: 'draft-2', title: 'Product Launch Post', content: '', status: 'published', personaId: 'ent', userId: 'user-1', createdAt: new Date() },
-      ];
+      const whereClause = and(
+        eq(drafts.userId, input.userId || ''),
+        input.personaId ? eq(drafts.personaId, input.personaId) : undefined,
+      );
+      return ctx.db.select().from(drafts)
+        .where(whereClause)
+        .orderBy(desc(drafts.updatedAt))
+        .limit(50);
     }),
 
   get: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
-      const { drafts } = await import('@deftwrite/db');
-
-      // TODO: Replace with real DB query
-      // const result = await ctx.db.select().from(drafts).where(eq(drafts.id, input.id)).limit(1);
-
-      return {
-        id: input.id,
-        title: 'Sample Draft',
-        content: 'This is a sample draft content...',
-        status: 'draft' as const,
-        personaId: 'biz',
-        userId: 'user-1',
-        createdAt: new Date(),
-      };
+      const result = await ctx.db.select().from(drafts).where(eq(drafts.id, input.id)).limit(1);
+      return result[0] ?? null;
     }),
 
   create: publicProcedure
     .input(z.object({
-      title: z.string().min(1).max(200),
-      content: z.string().optional(),
+      title: z.string().min(1).max(200).default('Untitled'),
+      content: z.string().default(''),
       personaId: z.string(),
       userId: z.string(),
+      contentType: z.enum(['article', 'book', 'social']).default('article'),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { drafts } = await import('@deftwrite/db');
-
-      // TODO: Replace with real DB insert
-      // await ctx.db.insert(drafts).values({ ...input });
-      return { id: `draft-${Date.now()}`, ...input, status: 'draft' as const, createdAt: new Date() };
+      const [row] = await ctx.db.insert(drafts).values({
+        ...input,
+        status: 'not-started',
+      }).returning();
+      return row;
     }),
 
   update: publicProcedure
@@ -62,23 +48,22 @@ export const draftsRouter = router({
       id: z.string(),
       title: z.string().min(1).max(200).optional(),
       content: z.string().optional(),
-      status: z.enum(['draft', 'published', 'archived']).optional(),
+      status: z.enum(['not-started', 'draft', 'published', 'archived']).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { drafts } = await import('@deftwrite/db');
-
-      // TODO: Replace with real DB update
-      // await ctx.db.update(drafts).set(input).where(eq(drafts.id, input.id));
-      return { ...input, id: input.id, createdAt: new Date() };
+      const [row] = await ctx.db.update(drafts)
+        .set(input)
+        .where(eq(drafts.id, input.id))
+        .returning();
+      return row;
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const { drafts } = await import('@deftwrite/db');
-
-      // TODO: Replace with real DB delete
-      // await ctx.db.delete(drafts).where(eq(drafts.id, input.id));
-      return { deleted: true, id: input.id };
+      // Cascade delete: remove associated ideas and other FK'd rows first
+      await ctx.db.delete(ideas).where(eq(ideas.draftId, input.id));
+      const [row] = await ctx.db.delete(drafts).where(eq(drafts.id, input.id)).returning();
+      return { deleted: true, ...row };
     }),
 });

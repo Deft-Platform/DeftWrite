@@ -182,3 +182,117 @@ export type ProductivityStats = {
   updatedAt: Date;
 };
 
+// --- Section ---
+export const sectionCreateSchema = z.object({
+  draftId: z.string(),
+  outlineId: z.string().nullish(),
+  parentId: z.string().nullish(),
+  title: z.string().min(1).max(200).default('Untitled'),
+  level: z.number().int().min(1).max(3).default(1),
+  order: z.number().int().default(0),
+  content: z.string().default(''),
+});
+
+export const sectionPatchSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  content: z.string().optional(),
+  level: z.number().int().min(1).max(3).optional(),
+  order: z.number().int().optional(),
+});
+
+export const sectionRebuildSchema = z.object({
+  draftId: z.string(),
+});
+
+// --- Change Request ---
+export const changeRequestCreateSchema = z.object({
+  draftId: z.string(),
+  sectionId: z.string().nullish(),
+  author: z.enum(['human', 'AI']).default('human'),
+  type: z.enum(['edit', 'rewrite', 'add_section', 'remove_section', 'review']).default('edit'),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  oldContent: z.string().optional(),
+  newContent: z.string().optional(),
+});
+
+export const changeRequestReviewSchema = z.object({
+  id: z.string(),
+  status: z.enum(['approved', 'rejected']),
+  reviewNotes: z.string().max(2000).optional(),
+});
+
+export const changeRequestApplySchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+});
+
+// --- Section Version ---
+export const sectionVersionListSchema = z.object({
+  sectionId: z.string(),
+  limit: z.number().int().min(1).max(50).default(20),
+  offset: z.number().int().min(0).default(0),
+});
+
+// --- Comment (expanded) ---
+export const commentResolveSchema = z.object({
+  id: z.string(),
+  resolved: z.boolean().default(true),
+});
+
+export const commentBatchActionSchema = z.object({
+  ids: z.array(z.string()),
+  resolved: z.boolean(),
+});
+
+// --- Section type ---
+export type Section = {
+  id: string;
+  draftId: string;
+  outlineId: string | null;
+  parentId: string | null;
+  title: string;
+  level: number;
+  order: number;
+  charStart: number;
+  charEnd: number | null;
+  content: string;
+  status: 'active' | 'archived' | 'merged';
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// --- Change Request type ---
+export type ChangeRequest = {
+  id: string;
+  draftId: string;
+  sectionId: string | null;
+  userId: string | null;
+  author: 'human' | 'AI';
+  type: 'edit' | 'rewrite' | 'add_section' | 'remove_section' | 'review';
+  title: string;
+  description: string | null;
+  oldContent: string | null;
+  newContent: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'applied' | 'cancelled';
+  reviewNotes: string | null;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// --- Section Version type ---
+export type SectionVersion = {
+  id: string;
+  sectionId: string;
+  draftId: string;
+  userId: string | null;
+  content: string;
+  wordCount: number;
+  checkpointName: string | null;
+  changeRequestId: string | null;
+  createdAt: Date;
+};
+
+

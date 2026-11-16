@@ -12,11 +12,11 @@
     "@deftwrite/db": "workspace:*",
     "@deftwrite/types": "workspace:*",
     "@trpc/server": "^10.45.2",
-    "express": "^4.21.2",
-    "cors": "^2.8.5",
-    "helmet": "^8.0.0",
     "better-auth": "^1.1.12",
-    "zod": "^3.24.1",
+    "cors": "^2.8.5",
+    "drizzle-orm": "0.38.4",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
     "postgres": "^3.4.5"
   },
   "devDependencies": {

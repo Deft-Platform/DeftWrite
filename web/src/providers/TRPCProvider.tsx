@@ -9,6 +9,7 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
         refetchOnWindowFocus: false,
         staleTime: 5 * 60 * 1000,
         retry: 1,
+        networkMode: 'offlineFirst',
       },
     },
   }));
@@ -20,6 +21,7 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
         url: import.meta.env.VITE_API_URL || 'http://localhost:3001' + '/trpc',
       }),
     ],
+    networkMode: 'offlineFirst',
   }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

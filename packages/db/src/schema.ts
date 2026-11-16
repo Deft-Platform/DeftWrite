@@ -132,3 +132,54 @@ export const productivityStats = pgTable('productivity_stats', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// --- Sections (materialized from outlines for stable agent addressing) ---
+export const sections = pgTable('sections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  draftId: uuid('draft_id').references(() => drafts.id).notNull(),
+  outlineId: uuid('outline_id').references(() => outlines.id),
+  parentId: uuid('parent_id'),
+  title: text('title').notNull().default(''),
+  level: integer('level').default(1),
+  order: integer('order').default(0),
+  charStart: integer('char_start').default(0),
+  charEnd: integer('char_end'),
+  content: text('content').default(''),
+  status: varchar('status', { length: 20 }).default('active'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// --- Change Requests (agent/human edit workflow per section) ---
+export const changeRequests = pgTable('change_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  draftId: uuid('draft_id').references(() => drafts.id).notNull(),
+  sectionId: uuid('section_id').references(() => sections.id),
+  userId: uuid('user_id').references(() => users.id),
+  author: varchar('author', { length: 20 }).default('human'),
+  type: varchar('type', { length: 20 }).default('edit'),
+  title: text('title').notNull(),
+  description: text('description'),
+  oldContent: text('old_content'),
+  newContent: text('new_content'),
+  status: varchar('status', { length: 20 }).default('pending'),
+  reviewNotes: text('review_notes'),
+  reviewedBy: uuid('reviewed_by').references(() => users.id),
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// --- Section Versions (granular version history) ---
+export const sectionVersions = pgTable('section_versions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sectionId: uuid('section_id').references(() => sections.id).notNull(),
+  draftId: uuid('draft_id').references(() => drafts.id).notNull(),
+  userId: uuid('user_id').references(() => users.id),
+  content: text('content').notNull(),
+  wordCount: integer('word_count').default(0),
+  checkpointName: text('checkpoint_name'),
+  changeRequestId: uuid('change_request_id').references(() => changeRequests.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+

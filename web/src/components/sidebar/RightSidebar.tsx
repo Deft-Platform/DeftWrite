@@ -6,20 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useRef, useEffect } from 'react';
 
 const QUICK_ACTIONS = [
-  { prompt: 'critique', label: 'critique' },
-  { prompt: 'expand', label: 'expand' },
-  { prompt: 'simplify', label: 'simplify' },
-  { prompt: 'flow', label: 'flow' },
-  { prompt: 'evidence', label: 'evidence' },
+  { prompt: 'critique', label: 'Critique' },
+  { prompt: 'expand', label: 'Expand' },
+  { prompt: 'simplify', label: 'Simplify' },
+  { prompt: 'flow', label: 'Improve Flow' },
+  { prompt: 'evidence', label: 'Find Evidence' },
 ];
 
-const AI_RESPONSES: Record<string, string> = {
-  critique: "Here's my critique of your draft:\n\n• The opening hook is strong — it grabs attention immediately.\n• Consider adding a concrete example or data point to support the second claim.\n• The transition between paragraphs 2 and 3 could be smoother.\n• End with a clearer call to action.\n\nOverall, solid foundation. With a few tweaks this could be publish-ready.",
-  expand: "Here's an expanded version of that section:\n\nThe underlying trend here is more significant than it appears on the surface. When we look at the data from Q3 2024, we see a 23% year-over-year increase in adoption rates across mid-market companies. This isn't just a spike — it's a structural shift in how organizations approach this problem.\n\nWhat's particularly interesting is that the adoption curve for smaller teams is even steeper, suggesting that the barrier to entry has come down significantly. This opens up a new market segment that many established players haven't fully considered.",
-  simplify: "Here's a simplified version:\n\nCompanies need to adapt or fall behind. The data shows a clear trend: organizations that adopt new approaches are outperforming their peers by 2-3x. Small teams are leading the way. The question isn't whether to change — it's how fast you can move.",
-  flow: "I've smoothed out the transitions and improved the flow:\n\nWhen we examine the current landscape, several patterns emerge. First, the shift toward remote work has fundamentally changed how teams collaborate. But this isn't just about location — it's about mindset.\n\nSecond, the tools we use shape how we think. The right technology can amplify your team's strengths, while the wrong stack amplifies their weaknesses.",
-  evidence: "Here are some evidence points you could incorporate:\n\n1. Gartner (2024): 73% of enterprises plan to increase AI investment\n2. McKinsey report on knowledge work productivity\n3. Internal data from your last quarter\n4. Industry benchmark from the latest state of the industry report",
-};
+const UNAVAILABLE_RESPONSE = "AI assistance is not configured.\n\nTo enable AI features:\n1. Open Settings → AI Provider\n2. Enter your provider API key\n3. Select a model\n\nUntil then, this sidebar stays out of your way while you draft.";
 
 function BookOutlinePanel() {
   const { outlineSections, addOutlineSection } = useApp();
@@ -202,12 +196,7 @@ export function RightSidebar() {
       const aiMsg: any = {
         id: `msg-${Date.now() + 1}`,
         role: 'assistant' as const,
-        content: text.toLowerCase().includes('critique') ? AI_RESPONSES.critique :
-                 text.toLowerCase().includes('expand') ? AI_RESPONSES.expand :
-                 text.toLowerCase().includes('simpl') ? AI_RESPONSES.simplify :
-                 text.toLowerCase().includes('flow') ? AI_RESPONSES.flow :
-                 text.toLowerCase().includes('evidence') ? AI_RESPONSES.evidence :
-                 "I've read through your draft. Here are my thoughts:\n\nThe core argument is strong, but I think you could strengthen it with a concrete example. Consider adding a specific data point or case study to support your main claim.\n\nWhat would you like me to focus on?",
+        content: UNAVAILABLE_RESPONSE,
         timestamp: Date.now(),
       };
       addChatMessage(draftKey, aiMsg);

@@ -38,7 +38,7 @@ const CONTENT_TYPES = [
 ] as const;
 
 export function LeftSidebar() {
-  const { personas, ideas, activePersonaId, openDraft, drafts, createDraft, activeContentType, setActiveContentType } = useApp();
+  const { personas, ideas, activePersonaId, openDraft, drafts, createDraft, activeContentType, setActiveContentType, deleteDraft, deleteIdea } = useApp();
   const [showNewDraft, setShowNewDraft] = useState(false);
   const [newDraftTitle, setNewDraftTitle] = useState('');
   const [newDraftType, setNewDraftType] = useState<'article' | 'book' | 'social'>('article');
@@ -75,9 +75,15 @@ export function LeftSidebar() {
         <ScrollArea className="flex-1 px-3 pt-2 pb-2">
           <div className="space-y-1.5">
             {personaIdeas.map(idea => (
-              <div key={idea.id} className="idea-item group flex items-start justify-between px-2 py-1.5 rounded-lg hover:bg-slate-800/50 text-xs text-slate-400 cursor-pointer">
-                <span className="flex-1 truncate">{idea.content}</span>
-                <button className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-600 hover:text-slate-400 transition-all">
+              <div key={idea.id} className="idea-item group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-800/50 text-xs text-slate-400 cursor-pointer">
+                <span className="flex-1 truncate" onClick={() => {}}>{idea.content}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteIdea(idea.id);
+                  }}
+                  className="ml-1 opacity-0 group-hover:opacity-100 p-0.5 text-slate-600 hover:text-red-400 transition-all"
+                >
                   <i data-lucide="trash-2" className="w-3 h-3" />
                 </button>
               </div>
@@ -142,13 +148,23 @@ export function LeftSidebar() {
 
           <div className="space-y-1">
             {personaDrafts.map(draft => (
-              <button
-                key={draft.id}
-                onClick={() => openDraft(draft.id)}
-                className="draft-item w-full text-left px-2 py-1.5 rounded text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 truncate transition-colors"
-              >
-                {draft.title}
-              </button>
+              <div key={draft.id} className="group flex items-center justify-between">
+                <button
+                  onClick={() => openDraft(draft.id)}
+                  className="draft-item flex-1 text-left px-2 py-1.5 rounded text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 truncate transition-colors"
+                >
+                  {draft.title}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteDraft(draft.id);
+                  }}
+                  className="ml-1 opacity-0 group-hover:opacity-100 p-0.5 text-slate-600 hover:text-red-400 transition-all"
+                >
+                  <i data-lucide="trash-2" className="w-3 h-3" />
+                </button>
+              </div>
             ))}
             {personaDrafts.length === 0 && (
               <div className="text-[10px] text-slate-700 px-2 italic">No drafts</div>

@@ -3,12 +3,18 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useApp } from '@/contexts/AppContext';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const PLACEHOLDERS: Record<string, string> = {
   article: 'Start writing your article...\n\nTip: Use H2 and H3 headings to create sections. The outline panel will auto-generate from your headings.',
   book: 'Begin your book...\n\nTip: Create parts and chapters in the outline panel on the right. Each chapter can be expanded into sections.',
   social: 'Draft your social post...\n\nChoose between single post, thread, or cross-platform mode below.',
+};
+
+const FONT_MAP: Record<string, string> = {
+  serif: "'Playfair Display', serif",
+  sans: "'Inter', sans-serif",
+  mono: "'JetBrains Mono', monospace",
 };
 
 interface EditorToolbarProps {
@@ -82,11 +88,6 @@ interface EditorContentProps {
 
 function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount, fontFamily, contentType }: EditorContentProps) {
   const readTime = Math.max(1, Math.ceil(wordCount / 200));
-  const fontMap: Record<string, string> = {
-    serif: "'Playfair Display', serif",
-    sans: "'Inter', sans-serif",
-    mono: "'JetBrains Mono', monospace",
-  };
 
   return (
     <>
@@ -98,7 +99,7 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
             value={title}
             onChange={e => onTitleChange(e.target.value)}
             className="w-full bg-transparent text-4xl font-bold outline-none mb-8 placeholder:text-slate-800"
-            style={{ fontFamily: fontMap[fontFamily] || fontMap.serif }}
+            style={{ fontFamily: FONT_MAP[fontFamily] || FONT_MAP.serif }}
           />
           <EditorContent editor={editor} />
         </div>
@@ -111,7 +112,7 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
         </div>
         <div className="flex gap-3 items-center">
           <span className="text-slate-500 hover:text-slate-300 cursor-pointer transition-colors" title="Switch font">
-            {fontMap[fontFamily]?.replace(/['"]/g, '') || 'Lora'}
+            {FONT_MAP[fontFamily]?.replace(/['"]/g, '') || 'Lora'}
           </span>
         </div>
       </div>
@@ -120,25 +121,61 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
 }
 
 export function MainEditor() {
-  const { aiConfig, fontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType } = useApp();
+  const { aiConfig, fontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft } = useApp();
   const [title, setTitle] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
+  const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef(false);
+  const editorRef = useRef<TiptapEditor | null>(null);
+
+  // Sync title when a draft opens
+  useEffect(() => {
+    if (activeDraft) {
+      setTitle(activeDraft.title);
+    } else {
+      setTitle('');
+    }
+  }, [activeDraft?.id]);
+
+  // Debounced content save — fires after 400ms of no changes
+  const scheduleContentSave = useCallback((json: unknown) => {
+    if (!activeDraftId) return;
+    if (!pendingSaveRef.current) {
+      pendingSaveRef.current = true;
+      saveRef.current = setTimeout(() => {
+        if (activeDraftId && editorRef.current) {
+          updateDraft(activeDraftId, { content: JSON.stringify(json) });
+          pendingSaveRef.current = false;
+        }
+      }, 400);
+    }
+  }, [activeDraftId, updateDraft]);
+
+  // Persist title changes
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    if (activeDraftId) {
+      updateDraft(activeDraftId, { title: newTitle });
+    }
+  }, [activeDraftId, updateDraft]);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       Placeholder.configure({ placeholder: PLACEHOLDERS[activeContentType] || PLACEHOLDERS.article }),
     ],
-    content: '',
-    onUpdate: ({ editor }) => {
-      if (!editor) return;
-      const json = editor.getJSON();
-      const text = editor.getText();
+    content: activeDraft?.content ?? '',
+    onUpdate: ({ editor: te }) => {
+      if (!te) return;
+      editorRef.current = te;
+      const json = te.getJSON();
+      const text = te.getText();
       const words = text.trim().split(/\s+/).filter(Boolean).length;
       setWordCount(words);
       setCharCount(text.length);
-      updateDraft('draft-temp', { content: JSON.stringify(json) });
+      scheduleContentSave(json);
     },
     editorProps: {
       attributes: {
@@ -147,12 +184,17 @@ export function MainEditor() {
     },
   });
 
-  // Sync content when draft opens
+  // Sync content when draft opens or editor initializes
   useEffect(() => {
-    if (editor) {
-      // Could load from activeDraft.content here
+    if (editor && activeDraft) {
+      const currentContent = editor.getHTML();
+      if (currentContent !== activeDraft.content) {
+        editor.commands.setContent(activeDraft.content || '');
+      }
+    } else if (editor && !activeDraft) {
+      editor.commands.setContent('');
     }
-  }, [editor]);
+  }, [editor, activeDraftId]);
 
   // Esc key to exit focus mode
   useEffect(() => {
@@ -228,7 +270,7 @@ export function MainEditor() {
           <EditorContentInner
             editor={editor}
             title={title}
-            onTitleChange={setTitle}
+            onTitleChange={handleTitleChange}
             wordCount={wordCount}
             charCount={charCount}
             fontFamily={fontFamily}
@@ -238,15 +280,7 @@ export function MainEditor() {
       )}
       {/* Focus mode: show only content + pomodoro */}
       {focusMode && (
-        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto">
-          <input
-            type="text"
-            placeholder="Untitled"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="w-full bg-transparent text-4xl font-bold outline-none mb-8 placeholder:text-slate-800 text-center"
-          />
-          <div className="ProseMirror prose-invert w-full min-h-[60vh]" />
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-8">
           <EditorContent editor={editor} />
         </div>
       )}

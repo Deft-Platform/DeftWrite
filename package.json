@@ -2,6 +2,9 @@
   "name": "deftwrite",
   "private": true,
   "workspaces": ["packages/*", "server", "web"],
+  "overrides": {
+    "drizzle-orm": "0.38.4"
+  },
   "scripts": {
     "dev": "bun run --filter web dev",
     "dev:all": "concurrently -n server,web -c blue,magenta 'bun --filter server dev' 'bun --filter web dev'",

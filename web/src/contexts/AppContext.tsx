@@ -5,6 +5,37 @@ import type {
   SidebarView, PersonaId, DraftStatus, ContentType, PomodoroState
 } from '@/types';
 
+// ── Persistence layer ──────────────────────────────────────────────────────
+
+const STORAGE_KEY_DRAFTS = 'deftwrite-drafts';
+const STORAGE_KEY_IDEAS = 'deftwrite-ideas';
+const STORAGE_KEY_SETTINGS = 'deftwrite-settings';
+const STORAGE_KEY_AI = 'deftwrite-ai-config';
+const STORAGE_KEY_FONT = 'deftwrite-font-family';
+
+function loadJSON<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJSON(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage full or unavailable — continue without persistence.
+  }
+}
+
+interface PersistedSettings {
+  activePersonaId?: string;
+  activeContentType?: string;
+}
+
 interface AppState extends PomodoroState {
   // Personas
   activePersonaId: PersonaId;
@@ -201,41 +232,85 @@ function saveDailyPomodoro(sessions: number, date: string, streak: number): void
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [activePersonaId, setActivePersonaState] = useState<PersonaId>('biz');
+  const [activePersonaId, setActivePersonaState] = useState<PersonaId>(() => {
+    const saved = loadJSON<PersistedSettings>(STORAGE_KEY_SETTINGS, {});
+    return (saved.activePersonaId as PersonaId) || 'biz';
+  });
   const [personas, setPersonas] = useState<Record<PersonaId, Persona>>(defaultPersonas);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<PersonaId, Draft[]>>({
-    ethan: [], tess: [], piper: [], biz: [], ent: [], pseudo: [],
+  const [drafts, setDrafts] = useState<Record<PersonaId, Draft[]>>(() => {
+    return loadJSON<Record<PersonaId, Draft[]>>(STORAGE_KEY_DRAFTS, {
+      ethan: [], tess: [], piper: [], biz: [], ent: [], pseudo: [],
+    });
   });
-  const [ideas, setIdeas] = useState<Record<PersonaId, Idea[]>>({
-    ethan: defaultPersonas.ethan.inbox,
-    tess: defaultPersonas.tess.inbox,
-    piper: defaultPersonas.piper.inbox,
-    biz: defaultPersonas.biz.inbox,
-    ent: defaultPersonas.ent.inbox,
-    pseudo: defaultPersonas.pseudo.inbox,
+  const [ideas, setIdeas] = useState<Record<PersonaId, Idea[]>>(() => {
+    return loadJSON<Record<PersonaId, Idea[]>>(STORAGE_KEY_IDEAS, {
+      ethan: defaultPersonas.ethan.inbox,
+      tess: defaultPersonas.tess.inbox,
+      piper: defaultPersonas.piper.inbox,
+      biz: defaultPersonas.biz.inbox,
+      ent: defaultPersonas.ent.inbox,
+      pseudo: defaultPersonas.pseudo.inbox,
+    });
   });
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [sidebarView, setSidebarView] = useState<SidebarView>('chat');
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [aiConfig, setAIConfigState] = useState<AIConfig>({
-    provider: 'platform',
-    model: 'deftauthor-v1',
-    personaPrompts: {
-      ethan: defaultPersonas.ethan.systemPrompt,
-      tess: defaultPersonas.tess.systemPrompt,
-      piper: defaultPersonas.piper.systemPrompt,
-      biz: defaultPersonas.biz.systemPrompt,
-      ent: defaultPersonas.ent.systemPrompt,
-      pseudo: defaultPersonas.pseudo.systemPrompt,
-    },
+  const [aiConfig, setAIConfigState] = useState<AIConfig>(() => {
+    const saved = loadJSON<Partial<AIConfig>>(STORAGE_KEY_AI, {});
+    return {
+      provider: 'platform',
+      model: '',
+      personaPrompts: {
+        ethan: '',
+        tess: '',
+        piper: '',
+        biz: '',
+        ent: '',
+        pseudo: '',
+      },
+      ...saved,
+    };
   });
-  const [fontFamily, setFontFamily] = useState<FontFamily>('serif');
+  const [fontFamily, setFontFamily] = useState<FontFamily>(() =>
+    loadJSON<FontFamily>(STORAGE_KEY_FONT, 'serif')
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [activeContentType, setActiveContentTypeState] = useState<ContentType>('article');
+  const [activeContentType, setActiveContentTypeState] = useState<ContentType>(() => {
+    const saved = loadJSON<PersistedSettings>(STORAGE_KEY_SETTINGS, {});
+    return (saved.activeContentType as ContentType) || 'article';
+  });
   const [outlineSections, setOutlineSections] = useState<{ id: string; title: string; visible: boolean }[]>([]);
+
+  // ── Persistence: drafts ────────────────────────────────────────────────
+  useEffect(() => {
+    saveJSON(STORAGE_KEY_DRAFTS, drafts);
+  }, [drafts]);
+
+  // ── Persistence: ideas ─────────────────────────────────────────────────
+  useEffect(() => {
+    saveJSON(STORAGE_KEY_IDEAS, ideas);
+  }, [ideas]);
+
+  // ── Persistence: settings (persona, content type) ──────────────────────
+  useEffect(() => {
+    saveJSON(STORAGE_KEY_SETTINGS, {
+      activePersonaId,
+      activeContentType,
+    });
+  }, [activePersonaId, activeContentType]);
+
+  // ── Persistence: AI config ─────────────────────────────────────────────
+  useEffect(() => {
+    saveJSON(STORAGE_KEY_AI, aiConfig);
+  }, [aiConfig]);
+
+  // ── Persistence: font family ───────────────────────────────────────────
+  useEffect(() => {
+    saveJSON(STORAGE_KEY_FONT, fontFamily);
+  }, [fontFamily]);
 
   const activeDraft = activeDraftId ? drafts[activePersonaId]?.find(d => d.id === activeDraftId) ?? null : null;
 
