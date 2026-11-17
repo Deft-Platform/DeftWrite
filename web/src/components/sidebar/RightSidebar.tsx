@@ -5,6 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useState, useRef, useEffect } from 'react';
 
+const CONTENT_TYPES = [
+  { id: 'article', label: 'Article', icon: 'file-text', placeholder: 'Start writing your article...' },
+  { id: 'book', label: 'Book', icon: 'book', placeholder: 'Begin your book...' },
+  { id: 'social', label: 'Social', icon: 'share-2', placeholder: 'Draft your social post...' },
+] as const;
+
 const QUICK_ACTIONS = [
   { prompt: 'critique', label: 'Critique' },
   { prompt: 'expand', label: 'Expand' },
@@ -161,12 +167,12 @@ function SocialPostPanel() {
   );
 }
 
-export function RightSidebar() {
-  const {
-    sidebarView, activeThreadId, chatMessages, activeDraftId,
-    addChatMessage, setSidebarView, setActiveThread,
-    comments, dismissComment, activeContentType
-  } = useApp();
+ export function RightSidebar() {
+   const {
+     sidebarView, activeThreadId, chatMessages, activeDraftId,
+     addChatMessage, setSidebarView, setActiveThread,
+     comments, dismissComment, activeContentType, updateDraft, setActiveContentType
+   } = useApp();
 
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -266,23 +272,43 @@ export function RightSidebar() {
   // Chat view
   return (
     <aside className="w-72 border-l border-slate-800 glass flex flex-col z-10 shrink-0">
-      <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Chat</span>
+      {/* Header with Content Type Selector */}
+      <div className="p-3 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Chat</span>
+            <span className="text-[9px] bg-purple-500/15 text-purple-400 px-1.5 py-0.5 rounded-full">AI</span>
+          </div>
+          <button
+            onClick={() => {
+              if (!activeDraftId) {
+                return;
+              }
+              updateDraft(activeDraftId, { updatedAt: Date.now() });
+            }}
+            className="flex items-center gap-1 px-2 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 rounded-md text-[10px] transition-colors"
+          >
+            <i data-lucide="save" className="w-3 h-3" />
+            <span>Save / File It</span>
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] bg-purple-500/15 text-purple-400 px-1.5 py-0.5 rounded-full">AI</span>
-          {threadComments.length > 0 && (
+        <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1 block">Content Type</label>
+        <div className="flex gap-1">
+          {CONTENT_TYPES.map(ct => (
             <button
-              className="relative p-1 text-slate-500 hover:text-slate-300 transition-colors"
-              title="Comment thread"
+              key={ct.id}
+              onClick={() => setActiveContentType(ct.id as 'article' | 'book' | 'social')}
+              className={`flex-1 flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-md text-[10px] transition-all ${
+                activeContentType === ct.id
+                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
+              }`}
+              title={ct.placeholder.split('\n')[0]}
             >
-              <i data-lucide="message-circle" className="w-4 h-4" />
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-purple-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
-                {threadComments.length}
-              </span>
+              <i data-lucide={ct.icon} className="w-3.5 h-3.5" />
+              <span>{ct.label}</span>
             </button>
-          )}
+          ))}
         </div>
       </div>
 

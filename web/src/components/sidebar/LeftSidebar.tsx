@@ -4,49 +4,75 @@ import { useEffect, useRef, useState } from 'react';
 
 function PersonaSelector() {
   const { activePersonaId, personas, setActivePersona } = useApp();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const active = personas[activePersonaId];
 
   return (
-    <div className="p-3 border-b border-slate-800">
-      <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Persona</label>
-      <div className="space-y-0.5">
-        {(Object.values(personas) as { id: string; name: string; emoji: string; color: string }[]).map(p => (
-          <button
-            key={p.id}
-            onClick={() => setActivePersona(p.id as any)}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
-              activePersonaId === p.id
-                ? 'bg-slate-700/60 text-white'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <span
-              className="w-2 h-2 rounded-full persona-active-indicator"
-              style={{ backgroundColor: p.color, opacity: activePersonaId === p.id ? 1 : 0.6 }}
-            />
-            <span>{p.emoji} {p.name}</span>
-          </button>
-        ))}
-      </div>
+    <div className="p-3 border-b border-slate-800 relative" ref={ref}>
+      <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1.5 block">Persona</label>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs bg-slate-700/40 hover:bg-slate-700/60 text-white transition-all"
+      >
+        <span
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: active.color }}
+        />
+        <span className="flex-1 text-left truncate">{active.emoji} {active.name}</span>
+        <i data-lucide={open ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-slate-400" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-3 right-3 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+          {(Object.values(personas) as { id: string; name: string; emoji: string; color: string }[]).map(p => (
+            <button
+              key={p.id}
+              onClick={() => { setActivePersona(p.id as any); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs transition-all ${
+                activePersonaId === p.id
+                  ? 'bg-indigo-500/20 text-white'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+              }`}
+            >
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: p.color }}
+              />
+              <span>{p.emoji} {p.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-const CONTENT_TYPES = [
-  { id: 'article', label: 'Article', icon: 'file-text', placeholder: 'Start writing your article...\n\nTip: Use H2 and H3 headings to create sections. The outline panel will auto-generate from your headings.' },
-  { id: 'book', label: 'Book', icon: 'book', placeholder: 'Begin your book...\n\nTip: Create parts and chapters in the outline panel on the right. Each chapter can be expanded into sections.' },
-  { id: 'social', label: 'Social', icon: 'share-2', placeholder: 'Draft your social post...\n\nChoose between single post, thread, or cross-platform mode below.' },
-] as const;
-
 export function LeftSidebar() {
-  const { personas, ideas, activePersonaId, openDraft, drafts, createDraft, activeContentType, setActiveContentType, deleteDraft, deleteIdea } = useApp();
+  const { personas, ideas, activePersonaId, openDraft, drafts, createDraft, activeContentType, setActiveContentType, deleteDraft, deleteIdea, addIdea, startDraftFromIdea } = useApp();
   const [showNewDraft, setShowNewDraft] = useState(false);
   const [newDraftTitle, setNewDraftTitle] = useState('');
   const [newDraftType, setNewDraftType] = useState<'article' | 'book' | 'social'>('article');
   const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newIdea, setNewIdea] = useState('');
 
   useEffect(() => {
     if (showNewDraft && inputRef.current) inputRef.current.focus();
   }, [showNewDraft]);
+
+  useEffect(() => {
+    if (isAdding && textareaRef.current) textareaRef.current.focus();
+  }, [isAdding]);
 
   const handleNewDraft = () => {
     if (newDraftTitle.trim()) {
@@ -68,15 +94,64 @@ export function LeftSidebar() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="px-3 pt-3 flex items-center justify-between">
           <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Inbox</label>
-          <button className="p-1 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300 transition-colors">
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="p-1 hover:bg-slate-700 rounded text-slate-500 hover:text-indigo-400 transition-colors"
+          >
             <i data-lucide="plus" className="w-3.5 h-3.5" />
           </button>
         </div>
+        {isAdding && (
+          <div className="px-3 pb-2">
+            <textarea
+              ref={textareaRef}
+              value={newIdea}
+              onChange={(e) => setNewIdea(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (newIdea.trim()) {
+                    addIdea(newIdea.trim());
+                    setNewIdea('');
+                    setIsAdding(false);
+                  }
+                } else if (e.key === 'Escape') {
+                  setIsAdding(false);
+                  setNewIdea('');
+                }
+              }}
+              placeholder="Capture an idea..."
+              rows={2}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-md px-2 py-1.5 text-[11px] text-slate-300 placeholder:text-slate-500 resize-none focus:outline-none focus:border-indigo-500/50"
+            />
+            <div className="flex justify-end gap-1 mt-1">
+              <button 
+                onClick={() => { setIsAdding(false); setNewIdea(''); }}
+                className="text-[9px] uppercase tracking-wider text-slate-500 hover:text-slate-300 px-2 py-1 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (newIdea.trim()) {
+                    addIdea(newIdea.trim());
+                    setNewIdea('');
+                    setIsAdding(false);
+                  }
+                }}
+                disabled={!newIdea.trim()}
+                className="text-[9px] uppercase tracking-wider text-indigo-400 hover:text-indigo-300 disabled:text-slate-600 px-2 py-1 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
         <ScrollArea className="flex-1 px-3 pt-2 pb-2">
           <div className="space-y-1.5">
             {personaIdeas.map(idea => (
               <div key={idea.id} className="idea-item group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-800/50 text-xs text-slate-400 cursor-pointer">
-                <span className="flex-1 truncate" onClick={() => {}}>{idea.content}</span>
+                <span className="flex-1 truncate" onClick={() => startDraftFromIdea(idea.id)}>{idea.content}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -169,28 +244,6 @@ export function LeftSidebar() {
             {personaDrafts.length === 0 && (
               <div className="text-[10px] text-slate-700 px-2 italic">No drafts</div>
             )}
-          </div>
-        </div>
-
-        {/* Content Type Selector */}
-        <div className="p-3 border-t border-slate-800">
-          <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1.5 block">Content Type</label>
-          <div className="flex gap-1">
-            {CONTENT_TYPES.map(ct => (
-              <button
-                key={ct.id}
-                onClick={() => setActiveContentType(ct.id as 'article' | 'book' | 'social')}
-                className={`flex-1 flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-md text-[10px] transition-all ${
-                  activeContentType === ct.id
-                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
-                }`}
-                title={ct.placeholder.split('\n')[0]}
-              >
-                <i data-lucide={ct.icon} className="w-3.5 h-3.5" />
-                <span className="font-medium">{ct.label}</span>
-              </button>
-            ))}
           </div>
         </div>
       </div>
