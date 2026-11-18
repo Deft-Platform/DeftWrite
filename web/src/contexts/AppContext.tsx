@@ -40,6 +40,7 @@ interface AppState extends PomodoroState {
   // Personas
   activePersonaId: PersonaId;
   personas: Record<PersonaId, Persona>;
+  updatePersona: (id: PersonaId, updates: Partial<Persona>) => void;
   setActivePersona: (id: PersonaId) => void;
 
   // Drafts
@@ -100,6 +101,16 @@ interface AppState extends PomodoroState {
   // Focus mode
   focusMode: boolean;
   toggleFocusMode: () => void;
+
+  // Draft management
+  draftsPanelOpen: boolean;
+  closeDrafts: () => void;
+  allDrafts: Draft[];
+  allDraftsMap: Record<string, Draft>;
+
+  // Content save
+  forceSaveRef: React.MutableRefObject<(() => void) | null>;
+  forceSaveContent: () => void;
 }
 
 const defaultPersonas: Record<PersonaId, Persona> = {
@@ -381,6 +392,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setActiveThreadId(null);
   }, []);
 
+  const updatePersona = useCallback((id: PersonaId, updates: Partial<Persona>) => {
+    setPersonas(prev => ({
+      ...prev,
+      [id]: { ...prev[id], ...updates },
+    }));
+  }, []);
+
   const openDraft = useCallback((draftId: string) => {
     setActiveDraftId(draftId);
   }, []);
@@ -555,12 +573,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  const [draftsPanelOpen, setDraftsPanelOpen] = useState(false);
+  const closeDrafts = useCallback(() => { setDraftsPanelOpen(false); }, []);
   const toggleFocusMode = useCallback(() => setFocusMode(prev => !prev), []);
+
+  // Flatten all drafts across personas for the management panel
+  const allDrafts = Object.values(drafts).flatMap(ds => ds);
+  const allDraftsMap = Object.fromEntries(allDrafts.map(d => [d.id, d])) as Record<string, Draft>;
+
+  // Forced save callback — signals editor to flush immediately
+  const forceSaveRef = useRef<(() => void) | null>(null);
+  const forceSaveContent = useCallback(() => {
+    if (forceSaveRef.current) forceSaveRef.current();
+  }, []);
 
   return (
     <AppContext.Provider value={{
-      activePersonaId, personas, setActivePersona,
-      activeDraftId, drafts, activeDraft, openDraft, createDraft, updateDraft, deleteDraft,
+      activePersonaId, personas, updatePersona, setActivePersona,
+      activeDraftId, drafts, allDrafts, allDraftsMap, activeDraft, openDraft, createDraft, updateDraft, deleteDraft,
       ideas, addIdea, deleteIdea, startDraftFromIdea,
       activeContentType, setActiveContentType: setActiveContentTypeState,
       outlineSections, addOutlineSection: (title: string) => {
@@ -575,6 +605,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       togglePomodoro, resetPomodoro,
       settingsOpen, openSettings, closeSettings,
       focusMode, toggleFocusMode,
+      forceSaveRef,
+      draftsPanelOpen, closeDrafts, forceSaveContent,
     }}>
       {children}
     </AppContext.Provider>

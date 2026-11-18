@@ -152,6 +152,26 @@ export function MainEditor() {
     }
   }, [activeDraftId, updateDraft]);
 
+  // Force immediate save — bypasses debounce, flushes current content
+  const { forceSaveRef } = useApp();
+  const forceFlushSave = useCallback(() => {
+    if (!activeDraftId || !editorRef.current) return;
+    // Clear any pending debounce
+    if (saveRef.current) {
+      clearTimeout(saveRef.current);
+      saveRef.current = null;
+    }
+    pendingSaveRef.current = false;
+    const json = editorRef.current.getJSON();
+    const text = editorRef.current.getText();
+    updateDraft(activeDraftId, { content: JSON.stringify(json) });
+  }, [activeDraftId, updateDraft]);
+
+  // Register force save callback so RightSidebar can trigger it
+  useEffect(() => {
+    forceSaveRef.current = forceFlushSave;
+  }, [forceSaveRef, forceFlushSave]);
+
   // Persist title changes
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle);

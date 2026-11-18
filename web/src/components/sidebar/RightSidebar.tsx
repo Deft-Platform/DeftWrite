@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useState, useRef, useEffect } from 'react';
+import { DraftManagementPanel } from './DraftManagementPanel';
+import type { Draft } from '@/types';
 
 const CONTENT_TYPES = [
   { id: 'article', label: 'Article', icon: 'file-text', placeholder: 'Start writing your article...' },
@@ -20,6 +22,21 @@ const QUICK_ACTIONS = [
 ];
 
 const UNAVAILABLE_RESPONSE = "AI assistance is not configured.\n\nTo enable AI features:\n1. Open Settings → AI Provider\n2. Enter your provider API key\n3. Select a model\n\nUntil then, this sidebar stays out of your way while you draft.";
+
+const STATUS_FLOW: Record<string, string> = {
+  'not-started': 'outlining',
+  'outlining': 'draft',
+  'draft': 'polish',
+  'polish': 'published',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  'not-started': 'Not Started',
+  'outlining': 'Outlining',
+  'draft': 'Draft',
+  'polish': 'Polish',
+  'published': 'Published',
+};
 
 function BookOutlinePanel() {
   const { outlineSections, addOutlineSection } = useApp();
@@ -171,8 +188,13 @@ function SocialPostPanel() {
    const {
      sidebarView, activeThreadId, chatMessages, activeDraftId,
      addChatMessage, setSidebarView, setActiveThread,
-     comments, dismissComment, activeContentType, updateDraft, setActiveContentType
+     comments, dismissComment, activeContentType, updateDraft, setActiveContentType,
+     activeDraft, forceSaveContent,
    } = useApp();
+
+   const [saveFlash, setSaveFlash] = useState(false);
+   const [draftFilter, setDraftFilter] = useState<'all' | string>('all');
+   const [showDrafts, setShowDrafts] = useState(false);
 
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -279,18 +301,40 @@ function SocialPostPanel() {
             <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Chat</span>
             <span className="text-[9px] bg-purple-500/15 text-purple-400 px-1.5 py-0.5 rounded-full">AI</span>
           </div>
-          <button
-            onClick={() => {
-              if (!activeDraftId) {
-                return;
-              }
-              updateDraft(activeDraftId, { updatedAt: Date.now() });
-            }}
-            className="flex items-center gap-1 px-2 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 rounded-md text-[10px] transition-colors"
-          >
-            <i data-lucide="save" className="w-3 h-3" />
-            <span>Save / File It</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowDrafts(!showDrafts)}
+              className={`px-2 py-1 text-[10px] rounded transition-colors ${
+                showDrafts
+                  ? 'bg-slate-700 text-slate-200'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+              title="View drafts"
+            >
+              <i data-lucide="folder-tree" className="w-3 h-3" />
+            </button>
+            <button
+              onClick={async () => {
+                if (!activeDraftId || !activeDraft) return;
+                forceSaveContent();
+                const nextStatus = STATUS_FLOW[activeDraft.status];
+                if (nextStatus) {
+                  updateDraft(activeDraftId, { status: nextStatus as Draft['status'] });
+                }
+                setSaveFlash(true);
+                setTimeout(() => setSaveFlash(false), 1200);
+              }}
+              disabled={!activeDraftId}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-all ${
+                saveFlash
+                  ? 'bg-emerald-500/20 text-emerald-300'
+                  : 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300'
+              } ${!activeDraftId ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <i data-lucide={saveFlash ? 'check' : 'save'} className="w-3 h-3" />
+              <span>{saveFlash ? 'Saved' : 'Save / File It'}</span>
+            </button>
+          </div>
         </div>
         <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1 block">Content Type</label>
         <div className="flex gap-1">
@@ -315,6 +359,9 @@ function SocialPostPanel() {
       {/* Dynamic panel based on content type */}
       {activeContentType === 'book' && <BookOutlinePanel />}
       {activeContentType === 'social' && <SocialPostPanel />}
+
+      {/* Draft Management Panel */}
+      {showDrafts && <DraftManagementPanel />}
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <ScrollArea className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar text-sm">
