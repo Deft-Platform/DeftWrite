@@ -6,7 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useState, useRef, useEffect } from 'react';
 import { DraftManagementPanel } from './DraftManagementPanel';
-import type { Draft } from '@/types';
+import type { Draft, ChatMessage } from '@/types';
+import { chatComplete, type ChatMsg } from '@/lib/ai';
+import { draftToMarkdown } from '@/lib/markdown';
 
 const CONTENT_TYPES = [
   { id: 'article', label: 'Article', icon: 'file-text', placeholder: 'Start writing your article...' },
@@ -15,14 +17,14 @@ const CONTENT_TYPES = [
 ] as const;
 
 const QUICK_ACTIONS = [
-  { prompt: 'critique', label: 'Critique' },
-  { prompt: 'expand', label: 'Expand' },
-  { prompt: 'simplify', label: 'Simplify' },
-  { prompt: 'flow', label: 'Improve Flow' },
-  { prompt: 'evidence', label: 'Find Evidence' },
+  { prompt: 'Give a short, specific critique of this draft: what is working and the two or three most impactful things to change.', label: 'Critique' },
+  { prompt: 'Suggest how to expand this draft with concrete additions — sections, examples, or evidence it is missing.', label: 'Expand' },
+  { prompt: 'Rewrite this draft to be simpler and clearer without losing meaning. Return the rewrite.', label: 'Simplify' },
+  { prompt: 'Improve the flow and transitions of this draft. Point out specific rough spots and how to smooth them.', label: 'Improve Flow' },
+  { prompt: 'Suggest where this draft needs supporting evidence or citations, and what kind of source would strengthen each claim.', label: 'Find Evidence' },
 ];
 
-const UNAVAILABLE_RESPONSE = "AI assistance is not configured.\n\nTo enable AI features:\n1. Open Settings → AI Provider\n2. Enter your provider API key\n3. Select a model\n\nUntil then, this sidebar stays out of your way while you draft.";
+const AI_ERROR_RESPONSE = "I couldn't reach the writing model.\n\nThe AI runs through the halo gateway, which is only reachable on the Tailscale network while the dev server is running. Check your connection and try again.";
 
 const STATUS_FLOW: Record<string, string> = {
   'not-started': 'outlining',
@@ -190,11 +192,10 @@ function SocialPostPanel() {
      sidebarView, activeThreadId, chatMessages, activeDraftId,
      addChatMessage, setSidebarView, setActiveThread,
      comments, dismissComment, activeContentType, updateDraft, setActiveContentType,
-     activeDraft, forceSaveContent,
+     activeDraft, forceSaveContent, personas, activePersonaId, aiConfig,
    } = useApp();
 
    const [saveFlash, setSaveFlash] = useState(false);
-   const [draftFilter, setDraftFilter] = useState<'all' | string>('all');
    const [showDrafts, setShowDrafts] = useState(false);
 
   const [input, setInput] = useState('');
@@ -208,11 +209,36 @@ function SocialPostPanel() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: any = {
+  // Build the system prompt from the active persona and current draft so the
+  // assistant answers in the right voice and with the draft as context.
+  const buildSystemPrompt = (): string => {
+    const persona = personas[activePersonaId];
+    const personaPrompt =
+      aiConfig.personaPrompts?.[activePersonaId]?.trim() ||
+      persona?.systemPrompt?.trim() ||
+      'You are a sharp, concise writing assistant.';
+    const parts = [
+      personaPrompt,
+      `You are the writing assistant inside DeftWrite, helping with a ${activeContentType}. Be concise and practical. When asked to rewrite, return the rewritten text only.`,
+    ];
+    if (activeDraft) {
+      let body = '';
+      try {
+        body = draftToMarkdown(activeDraft.title, JSON.parse(activeDraft.content || '{}'));
+      } catch {
+        body = activeDraft.title || '';
+      }
+      body = body.trim().slice(0, 6000);
+      if (body) parts.push(`Current draft:\n"""\n${body}\n"""`);
+    }
+    return parts.join('\n\n');
+  };
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isTyping) return;
+    const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
-      role: 'user' as const,
+      role: 'user',
       content: text,
       timestamp: Date.now(),
     };
@@ -220,17 +246,33 @@ function SocialPostPanel() {
     setInput('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMsg: any = {
+    const history: ChatMsg[] = messages
+      .slice(-8)
+      .map((m) => ({ role: m.role, content: m.content }));
+    const payload: ChatMsg[] = [
+      { role: 'system', content: buildSystemPrompt() },
+      ...history,
+      { role: 'user', content: text },
+    ];
+
+    try {
+      const reply = await chatComplete(payload, { model: aiConfig.model || undefined });
+      addChatMessage(draftKey, {
         id: `msg-${Date.now() + 1}`,
-        role: 'assistant' as const,
-        content: UNAVAILABLE_RESPONSE,
+        role: 'assistant',
+        content: reply,
         timestamp: Date.now(),
-      };
-      addChatMessage(draftKey, aiMsg);
+      });
+    } catch {
+      addChatMessage(draftKey, {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: AI_ERROR_RESPONSE,
+        timestamp: Date.now(),
+      });
+    } finally {
       setIsTyping(false);
-    }, 800 + Math.random() * 700);
+    }
   };
 
   const handleSend = () => {
