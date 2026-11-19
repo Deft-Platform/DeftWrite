@@ -12,6 +12,20 @@ import { draftToMarkdown } from '@/lib/markdown';
 // into an object before loading — otherwise raw JSON leaks into the editor (or
 // content is lost). Falls back to treating the value as HTML/plain text for
 // any legacy or non-JSON content.
+// Pull top-level headings out of a Tiptap doc for the live outline (ECD-4).
+interface PMNodeLite { type: string; attrs?: Record<string, unknown>; content?: PMNodeLite[]; text?: string }
+function extractHeadings(doc: unknown): { level: number; text: string }[] {
+  const nodes = (doc as { content?: PMNodeLite[] })?.content ?? [];
+  const out: { level: number; text: string }[] = [];
+  for (const n of nodes) {
+    if (n.type === 'heading') {
+      const text = (n.content ?? []).map((c) => c.text ?? '').join('').trim();
+      if (text) out.push({ level: Number(n.attrs?.level) || 1, text });
+    }
+  }
+  return out;
+}
+
 function parseDraftContent(raw: string | undefined): unknown {
   if (!raw) return '';
   const trimmed = raw.trim();
@@ -216,7 +230,7 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
 }
 
 export function MainEditor() {
-  const { aiConfig, fontFamily, setFontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft } = useApp();
+  const { aiConfig, fontFamily, setFontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft, setDocumentHeadings } = useApp();
   const cycleFont = useCallback(() => {
     const order = ['serif', 'sans', 'mono'] as const;
     const next = order[(order.indexOf(fontFamily as typeof order[number]) + 1) % order.length];
@@ -309,6 +323,7 @@ export function MainEditor() {
       const words = text.trim().split(/\s+/).filter(Boolean).length;
       setWordCount(words);
       setCharCount(text.length);
+      setDocumentHeadings(extractHeadings(te.getJSON()));
       scheduleContentSave();
     },
     editorProps: {
@@ -328,6 +343,7 @@ export function MainEditor() {
     const text = editor.getText();
     setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
     setCharCount(text.length);
+    setDocumentHeadings(extractHeadings(editor.getJSON()));
   }, [editor, activeDraftId]);
 
   // Esc key to exit focus mode

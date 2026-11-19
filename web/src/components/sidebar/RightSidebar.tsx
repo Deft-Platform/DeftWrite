@@ -41,6 +41,42 @@ const STATUS_LABELS: Record<string, string> = {
   'published': 'Published',
 };
 
+// ECD-4: live table of contents, auto-generated from the document's headings.
+function OutlinePanel() {
+  const { documentHeadings } = useApp();
+
+  const goToHeading = (index: number) => {
+    const nodes = document.querySelectorAll('.ProseMirror :is(h1, h2, h3)');
+    const el = nodes[index] as HTMLElement | undefined;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  return (
+    <div className="px-3 py-3 border-t border-slate-800/50">
+      <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Outline</label>
+      {documentHeadings.length === 0 ? (
+        <div className="text-[10px] text-slate-700 italic text-center py-3">
+          Add H1–H3 headings and they'll appear here
+        </div>
+      ) : (
+        <div className="space-y-0.5">
+          {documentHeadings.map((h, i) => (
+            <button
+              key={`${i}-${h.text}`}
+              onClick={() => goToHeading(i)}
+              className="w-full text-left truncate text-[11px] text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 rounded px-1.5 py-1 transition-colors"
+              style={{ paddingLeft: `${(h.level - 1) * 12 + 6}px` }}
+              title={h.text}
+            >
+              {h.text}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BookOutlinePanel() {
   const { outlineSections, addOutlineSection } = useApp();
   const [newSection, setNewSection] = useState('');
@@ -400,6 +436,7 @@ function SocialPostPanel() {
       </div>
 
       {/* Dynamic panel based on content type */}
+      {(activeContentType === 'article' || activeContentType === 'book') && <OutlinePanel />}
       {activeContentType === 'book' && <BookOutlinePanel />}
       {activeContentType === 'social' && <SocialPostPanel />}
 
