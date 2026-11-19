@@ -1,3 +1,4 @@
+import { Icon } from '@/components/ui/icon';
 import { useApp } from '@/contexts/AppContext';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -74,7 +75,7 @@ export function SettingsModal() {
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm font-bold text-white">Settings</h2>
           <button onClick={closeSettings} className="p-1 hover:bg-slate-700 rounded transition-colors">
-            <i data-lucide="x" className="w-4 h-4 text-slate-500" />
+            <Icon name="x" className="w-4 h-4 text-slate-500" />
           </button>
         </div>
 
@@ -115,7 +116,7 @@ export function SettingsModal() {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <i data-lucide={p.icon} className={`w-4 h-4 ${p.iconColor}`} />
+                      <Icon name={p.icon} className={`w-4 h-4 ${p.iconColor}`} />
                       <div>
                         <div className="text-[11px] text-white">{p.name}</div>
                         <div className="text-[9px] text-slate-500">{p.sub}</div>
@@ -131,7 +132,7 @@ export function SettingsModal() {
               <div className="mb-4">
                 <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <i data-lucide="shield-check" className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                    <Icon name="shield-check" className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-[11px] text-indigo-200 font-medium">DeftAuthor</p>
                       <p className="text-[10px] text-indigo-300/70 mt-0.5 leading-relaxed">
@@ -160,7 +161,7 @@ export function SettingsModal() {
                     className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-xs outline-none focus:border-indigo-500/50 transition-colors placeholder:text-slate-600"
                   />
                   <button className="absolute right-2 top-2 p-0.5 text-slate-500 hover:text-slate-300">
-                    <i data-lucide="eye" className="w-3.5 h-3.5" />
+                    <Icon name="eye" className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <p className="text-[9px] text-slate-600 mt-1.5">Your key is stored locally and never transmitted to us.</p>
@@ -226,7 +227,7 @@ export function SettingsModal() {
                       <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 rounded-full">Configured</span>
                     )}
                   </div>
-                  <i data-lucide={editingPrompt === persona.id ? 'chevron-up' : 'chevron-down'} className="w-4 h-4 text-slate-500" />
+                  <Icon name={editingPrompt === persona.id ? 'chevron-up' : 'chevron-down'} className="w-4 h-4 text-slate-500" />
                 </button>
 
                 {editingPrompt === persona.id && (
@@ -248,7 +249,7 @@ export function SettingsModal() {
 
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
               <div className="flex items-start gap-2">
-                <i data-lucide="info" className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                <Icon name="info" className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-[10px] text-blue-200/80 leading-relaxed">
                   AI model requests will use the active persona's system prompt ({personas[activePersonaId].name}) by default. Other personas' prompts are stored for future use.
                 </p>

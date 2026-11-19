@@ -23,14 +23,12 @@ deploy:
 sdlc:
   gate: none    # prototype stage
   ci: none
-  test: unknown
+  test: "cd web && bunx playwright test  # plus: bun --filter web typecheck"
   review: pr-required
 
 depends_on: []
 
 known_issues:
-  - "Prototype is a single HTML file in the old deft-author repo; migrating to proper React component architecture."
-  - "No external AI provider integrated yet — placeholder for DeftPlatform's inference layer."
-  - "Settings not persisted; draft state lost on refresh."
-  - "Focus mode uses static HTML copy, not live Tiptap instance."
-  - "No version history, export, voice input, or drag-and-drop yet."
+  - "No external AI provider integrated yet — placeholder for DeftPlatform's inference layer (ECD-7)."
+  - "tRPC server + Drizzle schema are scaffolded but not wired into the client; app is localStorage-only."
+  - "No version history, DOCX/PDF export, voice input, or drag-and-drop yet (ECD-11..14)."

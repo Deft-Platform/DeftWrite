@@ -1,3 +1,4 @@
+import { Icon } from '@/components/ui/icon';
 import { useApp } from '@/contexts/AppContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -79,10 +80,10 @@ function BookOutlinePanel() {
         )}
         {outlineSections.map(section => (
           <div key={section.id} className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/40 text-[11px] text-slate-400 group">
-            <i data-lucide={mode === 'chapters' ? 'file-text' : 'book-open'} className="w-3 h-3 shrink-0" />
+            <Icon name={mode === 'chapters' ? 'file-text' : 'book-open'} className="w-3 h-3 shrink-0" />
             <span className="truncate flex-1">{section.title}</span>
             <button className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-600 hover:text-slate-400 transition-all">
-              <i data-lucide="eye" className="w-3 h-3" />
+              <Icon name="eye" className="w-3 h-3" />
             </button>
           </div>
         ))}
@@ -134,7 +135,7 @@ function SocialPostPanel() {
                 : 'text-slate-600 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
             }`}
           >
-            <i data-lucide={pm.icon} className="w-3.5 h-3.5" />
+            <Icon name={pm.icon} className="w-3.5 h-3.5" />
             <span className="font-medium">{pm.label}</span>
           </button>
         ))}
@@ -164,13 +165,13 @@ function SocialPostPanel() {
         <div className="space-y-2 mb-3">
           {PLATFORMS.map(plat => (
             <div key={plat.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/40 group">
-              <i data-lucide={plat.icon} className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <Icon name={plat.icon} className="w-3.5 h-3.5 text-slate-600 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-slate-400">{plat.label}</div>
                 <div className="text-[9px] text-slate-600">{plat.maxLength} chars</div>
               </div>
               <button className="p-0.5 text-slate-700 hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-all">
-                <i data-lucide="edit-3" className="w-3 h-3" />
+                <Icon name="edit-3" className="w-3 h-3" />
               </button>
             </div>
           ))}
@@ -251,7 +252,7 @@ function SocialPostPanel() {
               onClick={() => { setSidebarView('chat'); setActiveThread(null); }}
               className="px-2 py-0.5 text-[10px] text-slate-500 hover:text-slate-300 rounded transition-colors"
             >
-              <i data-lucide="arrow-left" className="w-3 h-3 inline mr-0.5" /> Back
+              <Icon name="arrow-left" className="w-3 h-3 inline mr-0.5" /> Back
             </button>
             <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Comment Thread</span>
           </div>
@@ -311,7 +312,7 @@ function SocialPostPanel() {
               }`}
               title="View drafts"
             >
-              <i data-lucide="folder-tree" className="w-3 h-3" />
+              <Icon name="folder-tree" className="w-3 h-3" />
             </button>
             <button
               onClick={async () => {
@@ -331,7 +332,7 @@ function SocialPostPanel() {
                   : 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300'
               } ${!activeDraftId ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
-              <i data-lucide={saveFlash ? 'check' : 'save'} className="w-3 h-3" />
+              <Icon name={saveFlash ? 'check' : 'save'} className="w-3 h-3" />
               <span>{saveFlash ? 'Saved' : 'Save / File It'}</span>
             </button>
           </div>
@@ -349,7 +350,7 @@ function SocialPostPanel() {
               }`}
               title={ct.placeholder.split('\n')[0]}
             >
-              <i data-lucide={ct.icon} className="w-3.5 h-3.5" />
+              <Icon name={ct.icon} className="w-3.5 h-3.5" />
               <span>{ct.label}</span>
             </button>
           ))}
@@ -410,9 +411,10 @@ function SocialPostPanel() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => sendMessage('Suggest an edit to improve this draft.')}
               className="flex-1 px-2 py-1.5 text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded transition-colors border border-amber-500/20 flex items-center justify-center gap-1"
             >
-              <i data-lucide="pencil" className="w-3 h-3" />
+              <Icon name="pencil" className="w-3 h-3" />
               Suggest Edit
             </Button>
           </div>
@@ -434,7 +436,7 @@ function SocialPostPanel() {
               onClick={handleSend}
               className="absolute right-2 top-2 p-1 text-purple-500/60 hover:text-purple-400 transition-colors"
             >
-              <i data-lucide="arrow-up" className="w-4 h-4" />
+              <Icon name="arrow-up" className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -465,7 +467,7 @@ function ReplyInput({ onReply }: { onReply: (text: string) => void }) {
         onClick={() => { if (text.trim()) { onReply(text); setText(''); } }}
         className="absolute right-2 top-2 p-1 text-purple-500/60 hover:text-purple-400 transition-colors"
       >
-        <i data-lucide="arrow-up" className="w-4 h-4" />
+        <Icon name="arrow-up" className="w-4 h-4" />
       </button>
     </div>
   );

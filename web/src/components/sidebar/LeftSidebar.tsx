@@ -1,3 +1,4 @@
+import { Icon } from '@/components/ui/icon';
 import { useApp } from '@/contexts/AppContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useRef, useState } from 'react';
@@ -29,7 +30,7 @@ function PersonaSelector() {
           style={{ backgroundColor: active.color }}
         />
         <span className="flex-1 text-left truncate">{active.emoji} {active.name}</span>
-        <i data-lucide={open ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-slate-400" />
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-slate-400" />
       </button>
       {open && (
         <div className="absolute top-full left-3 right-3 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
@@ -81,7 +82,7 @@ function NewDraftButton() {
         onClick={() => setOpen(true)}
         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-indigo-400 hover:bg-slate-800/50 rounded-lg transition-colors"
       >
-        <i data-lucide="plus" className="w-3.5 h-3.5" />
+        <Icon name="plus" className="w-3.5 h-3.5" />
         <span>New draft</span>
       </button>
       {open && (
@@ -150,6 +151,7 @@ function QueueItem({
   return (
     <div
       onClick={onOpen}
+      data-active-draft={isActive ? 'true' : undefined}
       className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${
         isActive
           ? 'bg-indigo-500/15 border border-indigo-500/30 shadow-sm'
@@ -171,20 +173,18 @@ function QueueItem({
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
         className="opacity-0 group-hover:opacity-100 p-1 text-slate-600 hover:text-red-400 transition-all"
       >
-        <i data-lucide="x" className="w-3 h-3" />
+        <Icon name="x" className="w-3 h-3" />
       </button>
     </div>
   );
 }
 
 export function LeftSidebar() {
-  const { personas, activePersonaId, openDraft, drafts, deleteDraft } = useApp();
+  const { personas, activePersonaId, openDraft, drafts, deleteDraft, activeDraftId } = useApp();
   
   const persona = personas[activePersonaId];
   const personaDrafts = (drafts[activePersonaId] || []).sort((a, b) => b.createdAt - a.createdAt);
   const hasDrafts = personaDrafts.length > 0;
-  const topDraft = personaDrafts[0];
-  const activeDraftId = topDraft?.id;
 
   return (
     <aside className="w-64 border-r border-slate-800 glass flex flex-col z-10 shrink-0">
@@ -201,7 +201,7 @@ export function LeftSidebar() {
           {!hasDrafts ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
               <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center">
-                <i data-lucide="file-plus" className="w-5 h-5 text-slate-700" />
+                <Icon name="file-plus" className="w-5 h-5 text-slate-700" />
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-slate-600 font-medium">No drafts yet</p>
@@ -229,7 +229,7 @@ export function LeftSidebar() {
         <div className="flex items-center justify-between mb-2">
           <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Publish</label>
           <button className="p-1 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300 transition-colors">
-            <i data-lucide="share-2" className="w-3.5 h-3.5" />
+            <Icon name="share-2" className="w-3.5 h-3.5" />
           </button>
         </div>
         <div className="space-y-1">

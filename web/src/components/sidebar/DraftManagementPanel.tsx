@@ -1,3 +1,4 @@
+import { Icon } from '@/components/ui/icon';
 import { useApp } from '@/contexts/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -27,7 +28,7 @@ const STATUS_FLOW: Record<string, string> = {
 };
 
 export function DraftManagementPanel() {
-  const { allDraftsMap, updateDraft, closeDrafts } = useApp();
+  const { allDraftsMap, updateDraft, closeDrafts, openDraft, setActivePersona, activePersonaId, activeDraftId } = useApp();
   const [filter, setFilter] = useState<'all' | string>('all');
 
   const filtered = filter === 'all'
@@ -46,7 +47,13 @@ export function DraftManagementPanel() {
   };
 
   const handleSelect = (id: string) => {
-    // Navigate to this draft — handled by opening it in AppContext
+    const draft = allDraftsMap[id];
+    if (!draft) return;
+    // Drafts can belong to another persona; switch to it before opening.
+    if (draft.personaId !== activePersonaId) {
+      setActivePersona(draft.personaId);
+    }
+    openDraft(id);
   };
 
   return (
@@ -58,7 +65,7 @@ export function DraftManagementPanel() {
           className="p-0.5 text-slate-600 hover:text-slate-400 transition-colors"
           title="Close"
         >
-          <i data-lucide="x" className="w-3 h-3" />
+          <Icon name="x" className="w-3 h-3" />
         </button>
       </div>
 
@@ -85,7 +92,7 @@ export function DraftManagementPanel() {
           <div
             key={draft.id}
             className={`group flex items-start gap-1.5 px-2 py-1.5 rounded cursor-pointer transition-colors ${
-              draft.id === 'active' ? 'bg-indigo-500/10 border border-indigo-500/20' : 'bg-slate-800/30 hover:bg-slate-800/60'
+              draft.id === activeDraftId ? 'bg-indigo-500/10 border border-indigo-500/20' : 'bg-slate-800/30 hover:bg-slate-800/60'
             }`}
             onClick={() => handleSelect(draft.id)}
           >
@@ -111,7 +118,7 @@ export function DraftManagementPanel() {
                 className="p-0.5 text-slate-600 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                 title={`Advance to ${STATUS_LABELS[STATUS_FLOW[draft.status]]}`}
               >
-                <i data-lucide="arrow-right" className="w-3 h-3" />
+                <Icon name="arrow-right" className="w-3 h-3" />
               </button>
             )}
           </div>
