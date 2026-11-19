@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { TRPCProvider } from './providers/TRPCProvider'
-import { createIcons } from 'lucide'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,5 +11,3 @@ createRoot(document.getElementById('root')!).render(
     </TRPCProvider>
   </StrictMode>,
 )
-
-createIcons()

@@ -1,39 +1,49 @@
 # DeftWrite Progress Tracker
 
 ## Completed (main)
-| ID | Feature | PR | Status | QA | Notes |
-|---|---|---|---|---|---|
-| ECD-1 | Pomodoro Timer | #17 | ✅ Merged | ✅ Pass (2/2 tests) | Audio notifications, session tracking (work/break), header timer display, focus mode UI in header. Controls use SVG icons without text labels — intentional. |
-| ECD-2 | Focus Mode | #18 | ✅ Merged | ✅ Pass (3/3 tests) | Distraction-free overlay, hides sidebars/toolbars, narrows to `max-w-2xl`. Toggle is icon-only in editor toolbar (`data-lucide="maximize"`), keyboard shortcut `Ctrl+Shift+F`, exits via Escape. |
-| ECD-3 | Content Type Switching | #18 | ✅ Merged | ✅ Pass (4/4 tests) | Article/Book/Social selector bar, dynamic placeholders, book outline panel, social post modes (single/thread/cross-platform). All layout regions visible. |
+| ID | Feature | PR | Status | Notes |
+|---|---|---|---|---|
+| ECD-1 | Pomodoro Timer | #17 | ✅ Merged | Work/break cycles, daily session + streak tracking, header + focus-mode display. |
+| ECD-2 | Focus Mode | #18 | ✅ Merged | Distraction-free overlay, hides sidebars/toolbar, `Ctrl+Shift+F` toggle, `Esc` exit. |
+| ECD-3 | Content Type Switching | #18 | ✅ Merged | Article/Book/Social selector, book outline panel, social post modes. |
 
-## QA Summary (2025-01-10)
-| Test Suite | Result | Details |
-|---|---|---|
-| ECD-1: Pomodoro Timer | ✅ 2/2 pass | Header visible, controls respond to start/pause/reset |
-| ECD-2: Focus Mode | ✅ 3/3 pass | Toggles via keyboard, exits on Escape, sidebar visibility toggles correctly |
-| ECD-3: Content Type Switching | ✅ 4/4 pass | Selector buttons present, placeholder updates per type, right sidebar panels swap correctly |
-| Layout Smoke Test | ✅ Pass | All 4 regions (header, left sidebar, main, right sidebar) visible |
-| Console Errors | ✅ Pass | Zero errors on load |
-| Screenshots | ✅ 8 captured | All features documented in `web/screenshots/` |
+## MUP hardening (branch feat/deftwrite-mup, 2026-11-19)
+Picked up from the previous agent, QA'd with real assertions, fixed the bugs it
+shipped as "passing", and closed the gap to a minimum usable product.
 
-## Dev Notes
-- **Dependency fix**: `@tanstack/react-query` downgraded from `^5.66.0` to `^4.36.0` to resolve `hashQueryKey` import conflict with `@trpc/react-query@10.x`. Clear Vite cache (`rm -rf node_modules/.vite .vite dist`) and restart dev server after this change.
+Fixed:
+- **Blank icons** — the editor toolbar and every sidebar used `<i data-lucide>`
+  processed by a one-shot `createIcons()` in `main.tsx`, so icons rendered blank
+  after the first React re-render. Replaced all of them with a `lucide-react`
+  `<Icon>` registry (`web/src/components/ui/icon.tsx`); removed `createIcons`.
+- **Draft persistence** — content was saved as `JSON.stringify(getJSON())` but
+  loaded via `setContent(string)` (parsed as HTML), so reopening a draft dumped
+  raw JSON or lost the content. Now parsed back to JSON on load. The autosave was
+  also a leading throttle capturing a stale first-keystroke snapshot; rewrote it
+  as a trailing 400ms debounce reading the latest content, plus a
+  pagehide/visibilitychange flush so a quick reload can't lose edits.
+- **Dead controls** — the draft-management panel's row click was a no-op (now
+  opens the draft, switching persona if needed); the "Suggest Edit" button had no
+  handler (now routes to chat); removed the non-functional comment toolbar button
+  (comments are deferred to ECD-8).
+- **Wrong queue highlight** — the writing queue highlighted the newest draft
+  instead of the one actually open; now tracks the real active draft.
+- **Font switcher** (ECD-5 lite) — the footer font label is now a working
+  serif/sans/mono cycle.
 
-## In Progress
-| ID | Feature | Branch | Notes |
-|---|---|---|---|
+Added:
+- **Markdown export** — footer Export menu: copy to clipboard or download `.md`
+  (`web/src/lib/markdown.ts` serializes the Tiptap doc + title).
 
-## Blocked
-| ID | Feature | Reason |
-|---|---|---|
+## QA (2026-11-19)
+`web/tests/e2e/mup-qa.spec.ts` — 6/6 pass against the dev server: no console
+errors on load, icons render (0 blank placeholders), draft survives reload,
+management-panel navigation, queue highlight, Markdown export. The previous
+`devwrite.spec.ts` suite was mostly screenshots with `if (visible)` guards and no
+hard assertions — that is how real bugs shipped as "9/9 pass".
 
-## Backlog
-| ID | Feature | Notes |
-|---|---|---|
-| ECD-4 | AI Writing Assistance | Integration with OpenAI/Claude APIs — auto-suggestions, rewrites, tone adjustments |
-| ECD-5 | Version History | Draft snapshots, diff view, restore from history |
-| ECD-6 | Markdown Export | Export to .md, .pdf via print dialog |
-| ECD-7 | Draft Templates | Pre-built structures per content type |
-| ECD-8 | Collaborative Editing | Multi-user cursors, presence indicators |
-| ECD-9 | Keyboard Shortcuts | Customizable shortcut map, command palette |
+## Backlog (GitHub issues ECD-4 … ECD-15)
+AI chat / provider integration (ECD-7), AI suggestions (ECD-9), persona prompts
+(ECD-10), outline/TOC auto-generation (ECD-4), inline comments (ECD-8), version
+history (ECD-12), DOCX/PDF export (ECD-11), productivity dashboard (ECD-13),
+inbox drag-and-drop (ECD-14), custom keyboard shortcuts (ECD-15).

@@ -14,6 +14,11 @@ node_modules
 dist
 dist-ssr
 *.local
+*.tsbuildinfo
+
+# Test outputs
+playwright-report/
+test-results/
 
 # Drizzle
 packages/db/drizzle/
