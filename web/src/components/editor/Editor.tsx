@@ -136,17 +136,52 @@ function ExportMenu({ editor, title }: { editor: TiptapEditor | null; title: str
     }
   };
 
-  const downloadMd = () => {
-    const blob = new Blob([buildMarkdown()], { type: 'text/markdown' });
+  const triggerDownload = (blob: Blob, ext: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${slugify(title || 'untitled')}.md`;
+    a.download = `${slugify(title || 'untitled')}.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
     setOpen(false);
+  };
+
+  const downloadMd = () => triggerDownload(new Blob([buildMarkdown()], { type: 'text/markdown' }), 'md');
+
+  const downloadDocx = async () => {
+    const { draftToDocxBlob } = await import('@/lib/docx');
+    const blob = await draftToDocxBlob(title, (editor?.getJSON() as never) ?? null);
+    triggerDownload(blob, 'docx');
+  };
+
+  const printPdf = () => {
+    setOpen(false);
+    const body = editor?.getHTML() ?? '';
+    const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) { iframe.remove(); return; }
+    doc.open();
+    doc.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title || 'Untitled')}</title>` +
+      `<style>body{font-family:Georgia,'Times New Roman',serif;max-width:720px;margin:2.5rem auto;padding:0 1.25rem;color:#111;line-height:1.65}` +
+      `h1,h2,h3{font-family:Georgia,serif;line-height:1.25}blockquote{border-left:3px solid #ccc;margin:1rem 0;padding:.2rem 0 .2rem 1rem;color:#555}` +
+      `pre,code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f4f4f5}pre{padding:.75rem;border-radius:6px;overflow:auto}hr{border:0;border-top:1px solid #ddd;margin:1.5rem 0}</style></head>` +
+      `<body><h1>${esc(title || 'Untitled')}</h1>${body}</body></html>`
+    );
+    doc.close();
+    const win = iframe.contentWindow;
+    const cleanup = () => setTimeout(() => iframe.remove(), 1000);
+    if (win) {
+      win.onafterprint = cleanup;
+      win.focus();
+      win.print();
+    }
+    cleanup();
   };
 
   return (
@@ -172,6 +207,18 @@ function ExportMenu({ editor, title }: { editor: TiptapEditor | null; title: str
             className="w-full text-left px-2 py-1.5 text-[11px] text-slate-300 hover:bg-slate-700/60 rounded transition-colors"
           >
             Download .md
+          </button>
+          <button
+            onClick={downloadDocx}
+            className="w-full text-left px-2 py-1.5 text-[11px] text-slate-300 hover:bg-slate-700/60 rounded transition-colors"
+          >
+            Download .docx
+          </button>
+          <button
+            onClick={printPdf}
+            className="w-full text-left px-2 py-1.5 text-[11px] text-slate-300 hover:bg-slate-700/60 rounded transition-colors"
+          >
+            Print / PDF
           </button>
         </div>
       )}

@@ -45,6 +45,11 @@ const halo = loadHalo();
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Pre-bundle the heavy docx export lib so the first export doesn't stall on a
+  // cold on-demand transform.
+  optimizeDeps: {
+    include: ['docx'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
