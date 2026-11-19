@@ -63,6 +63,9 @@ interface AppState extends PomodoroState {
   setActiveContentType: (type: ContentType) => void;
   outlineSections: { id: string; title: string; visible: boolean }[];
   addOutlineSection: (title: string) => void;
+  // Live table of contents, derived from the editor's headings (ECD-4).
+  documentHeadings: { level: number; text: string }[];
+  setDocumentHeadings: (headings: { level: number; text: string }[]) => void;
 
   // AI Chat
   chatMessages: Record<string, ChatMessage[]>; // key: draftId
@@ -294,6 +297,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (saved.activeContentType as ContentType) || 'article';
   });
   const [outlineSections, setOutlineSections] = useState<{ id: string; title: string; visible: boolean }[]>([]);
+  const [documentHeadings, setDocumentHeadings] = useState<{ level: number; text: string }[]>([]);
 
   // ── Persistence: drafts ────────────────────────────────────────────────
   useEffect(() => {
@@ -596,6 +600,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       outlineSections, addOutlineSection: (title: string) => {
         setOutlineSections(prev => [...prev, { id: `section-${Date.now()}`, title, visible: true }]);
       },
+      documentHeadings, setDocumentHeadings,
       chatMessages, addChatMessage, clearChat,
       comments, addComment, addReply, dismissComment,
       sidebarView, activeThreadId, setSidebarView, setActiveThread: setActiveThreadId,

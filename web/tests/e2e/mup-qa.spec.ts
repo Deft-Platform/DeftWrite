@@ -123,4 +123,22 @@ test.describe('DeftWrite MUP QA', () => {
     expect(clip).toContain('# Export Me');
     expect(clip).toContain('Hello world export body.');
   });
+
+  test('docx export downloads a non-empty .docx (ECD-11)', async ({ page }) => {
+    await page.getByRole('button', { name: /New draft/i }).click();
+    await page.getByPlaceholder('Draft title...').fill('Docx Me');
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const editor = page.locator('.ProseMirror');
+    await editor.click();
+    await page.keyboard.type('Body for the docx file.');
+
+    await page.getByTitle('Export Markdown').click();
+    const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
+    await page.getByRole('button', { name: /Download \.docx/i }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.docx$/);
+    const fs = await import('fs');
+    const p = await download.path();
+    expect(fs.statSync(p).size, 'docx should be non-empty').toBeGreaterThan(1000);
+  });
 });

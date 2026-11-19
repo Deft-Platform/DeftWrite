@@ -56,6 +56,26 @@ test.describe('DeftWrite feature QA', () => {
     await expect(page.getByText('Book Outline')).toBeVisible();
   });
 
+  test('ECD-4: outline auto-generates from document headings and scrolls', async ({ page }) => {
+    await page.getByRole('button', { name: /New draft/i }).click();
+    await page.getByPlaceholder('Draft title...').fill('Outline Test');
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const editor = page.locator('.ProseMirror');
+    await editor.click();
+    // Markdown input rules in StarterKit turn "# " / "## " into headings.
+    await page.keyboard.type('# First Section\n');
+    await page.keyboard.type('Some body text.\n');
+    await page.keyboard.type('## A Subsection\n');
+
+    const outline = page.locator('aside').last();
+    await expect(outline.getByRole('button', { name: 'First Section' })).toBeVisible();
+    await expect(outline.getByRole('button', { name: 'A Subsection' })).toBeVisible();
+
+    // Clicking an outline entry should not throw (scrolls the editor).
+    await outline.getByRole('button', { name: 'First Section' }).click();
+    await expect(editor.locator('h1', { hasText: 'First Section' })).toBeVisible();
+  });
+
   test('editor toolbar formatting applies to the document', async ({ page }) => {
     await page.getByRole('button', { name: /New draft/i }).click();
     await page.getByPlaceholder('Draft title...').fill('Format Test');
