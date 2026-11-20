@@ -33,18 +33,33 @@ bun run dev          # web app on http://localhost:5173
 bun run dev:all      # web + tRPC server together
 ```
 
-## Quality gates
+## Quality gates / browser QA routine
 
 ```bash
-bun --filter web typecheck      # tsc --noEmit
-bun --filter web run build      # tsc -b && vite build
-cd web && bunx playwright test  # E2E (needs the dev server running)
+cd web
+bun run typecheck   # tsc --noEmit
+bun run build       # tsc -b && vite build
+bun run qa          # typecheck + full browser E2E (one command)
+bun run e2e         # just the E2E suite
+bun run e2e:headed  # watch it run in a real browser
+bun run e2e:ui      # Playwright's interactive UI mode
+bun run e2e:report  # open the last HTML report
 ```
 
-`web/tests/e2e/mup-qa.spec.ts` is the minimum-usable-product gate: it asserts
-icons render, drafts survive a reload, the draft list navigates, the writing
-queue highlights the open draft, Markdown export works, and the app loads with
-no console errors.
+`bun run e2e` is **self-contained**: Playwright boots its own dev server on port
+`5199` (with the `/halo` AI proxy) for the run and shuts it down after, so you
+don't need a server running. It won't touch a dev server you have open on
+5173/5174. Point it at an already-running instance with `QA_BASE_URL=...`.
+Failures capture a screenshot + video + trace under `web/test-results/`.
+
+The suite (18 checks, real assertions) covers every main feature:
+- `mup-qa` — icons render, reload-safe draft persistence, draft-list navigation,
+  queue highlight, Markdown + DOCX export, no console errors.
+- `features-qa` — pomodoro countdown, focus mode, content-type switching +
+  persistence, outline auto-generation + scroll (ECD-4), toolbar formatting.
+- `ai-qa` — a live halo/Gemma chat reply (ECD-7).
+- `core-flows` — draft create/delete, persona switch, font cycle, Save/File-It
+  status advance.
 
 ## Status
 

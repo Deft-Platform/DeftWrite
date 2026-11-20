@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 // dead draft-management clicks, wrong queue highlight.
 //
 // Target the running dev server. Override with QA_BASE_URL if needed.
-const BASE_URL = process.env.QA_BASE_URL || 'http://localhost:5174';
+const BASE_URL = process.env.QA_BASE_URL || 'http://localhost:5199';
 
 async function clearStorage(page: import('@playwright/test').Page) {
   await page.goto(BASE_URL);
