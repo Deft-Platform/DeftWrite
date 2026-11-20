@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // ECD-7: the chat sidebar talks to a real model (halo/Gemma via the dev proxy).
 // This makes a live network call, so give it a generous timeout.
-const BASE_URL = process.env.QA_BASE_URL || 'http://localhost:5174';
+const BASE_URL = process.env.QA_BASE_URL || 'http://localhost:5199';
 
 test.describe('DeftWrite AI chat', () => {
   test.setTimeout(60000);

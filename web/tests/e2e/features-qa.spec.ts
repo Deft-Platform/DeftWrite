@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Real-assertion coverage for the features the previous suite only screenshotted:
 // ECD-1 Pomodoro, ECD-2 Focus mode, ECD-3 Content-type switching.
-const BASE_URL = process.env.QA_BASE_URL || 'http://localhost:5174';
+const BASE_URL = process.env.QA_BASE_URL || 'http://localhost:5199';
 
 test.describe('DeftWrite feature QA', () => {
   test.beforeEach(async ({ page }) => {
