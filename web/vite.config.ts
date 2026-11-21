@@ -56,6 +56,9 @@ export default defineConfig({
     },
   },
   server: {
+    // Auto-open the browser on `bun run dev` for a one-command local launch.
+    // Suppressed under the Playwright test server (DEFTWRITE_NO_OPEN=1).
+    open: !process.env.DEFTWRITE_NO_OPEN,
     proxy: {
       '/trpc': {
         target: 'http://localhost:3001',

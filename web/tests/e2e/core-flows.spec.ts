@@ -27,7 +27,7 @@ test.describe('DeftWrite core flows', () => {
     // The new draft is active; delete it via its row button.
     const active = page.locator('[data-active-draft="true"]');
     await active.hover();
-    await active.getByRole('button').click();
+    await active.getByRole('button', { name: 'Delete draft' }).click();
     await expect(queue.getByText('Temp Draft')).toHaveCount(0);
   });
 
@@ -58,5 +58,38 @@ test.describe('DeftWrite core flows', () => {
     await page.getByRole('button', { name: /Save \/ File It/ }).click();
     // A new draft starts at "draft"; the flow advances it to "polish".
     await expect(page.locator('[data-active-draft="true"]')).toContainText('polish');
+  });
+
+  test('inbox: capture an idea and promote it to a draft', async ({ page }) => {
+    await page.getByPlaceholder('Capture an idea...').fill('Write about evidence');
+    await page.getByPlaceholder('Capture an idea...').press('Enter');
+
+    const sidebar = page.locator('aside').first();
+    const ideaRow = sidebar.locator('div', { hasText: 'Write about evidence' }).last();
+    await expect(ideaRow).toBeVisible();
+
+    await ideaRow.getByTitle('Start a draft from this idea').click();
+    // Promoted: editor opens on the new draft, titled from the idea.
+    await expect(page.locator('input[placeholder="Untitled"]')).toHaveValue('Write about evidence');
+    // And it leaves the inbox.
+    await expect(sidebar.getByText('Write about evidence', { exact: true })).toHaveCount(1);
+  });
+
+  test('priority sorts the queue above recency (Up Next)', async ({ page }) => {
+    await createDraft(page, 'A Draft'); // older
+    await createDraft(page, 'B Draft'); // newer -> starts on top (both Med)
+
+    const queue = page.locator('aside').first();
+    await expect(queue.locator('[data-priority]').first()).toContainText('B Draft');
+
+    // Raise A Draft to High (Med -> Low -> High): it should jump to the top.
+    const aItem = queue.locator('[data-priority]', { hasText: 'A Draft' });
+    await aItem.getByTitle(/Cycle priority/).click();
+    await aItem.getByTitle(/Cycle priority/).click();
+
+    const top = queue.locator('[data-priority]').first();
+    await expect(top).toContainText('A Draft');
+    await expect(top).toContainText('Up Next');
+    await expect(top).toHaveAttribute('data-priority', 'high');
   });
 });

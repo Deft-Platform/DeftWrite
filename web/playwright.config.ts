@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: process.env.QA_BASE_URL
     ? undefined
     : {
-        command: `bunx vite --port ${PORT} --strictPort`,
+        command: `DEFTWRITE_NO_OPEN=1 bunx vite --port ${PORT} --strictPort`,
         url: BASE_URL,
         timeout: 60000,
         reuseExistingServer: !process.env.CI,
