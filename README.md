@@ -1,14 +1,23 @@
 # DeftWrite
 
-The writing engine for the Deft platform — a deep-work authoring environment:
-personas, a Tiptap rich-text editor, a Pomodoro timer, focus mode, content-type
-switching (article / book / social), a persona-scoped writing queue, and
-Markdown export. Drafts persist locally in the browser.
+A focused producer's cockpit for one creator: capture ideas, see what's highest
+priority, pick up the top one and draft it (Tiptap editor, AI, outline, focus
+mode, Pomodoro), then export/publish it. The whole loop lives in one place —
+**idea → prioritized queue → draft → feedback → publish → done** — so the writing
+surface and the "what to work on next" tracker aren't split across two tools.
 
 Tier 2 (staff-only). Prototype stage: draft state is client-only (localStorage);
 the tRPC server and Drizzle schema under `server/` and `packages/db/` are
-scaffolded for the future DeftPlatform storage layer but not yet wired into the
-app.
+scaffolded for the future storage/auth layer but not yet wired into the app.
+
+### Scope (decided)
+
+DeftWrite is the system of record for Ethan's own production. **Out of scope:**
+external task tracking (Jira) and two-way sync with Confluence/DeftDocs — priority
+and status live natively on the draft, not mirrored from somewhere else.
+**Feedback** is handled in-app via shareable reviewer links (needs the server +
+auth). **Publishing** is one-way push *out* to a destination (email, LinkedIn,
+DeftDocs as a native target later), never a sync.
 
 ## AI (halo / Gemma)
 
@@ -27,11 +36,16 @@ Monorepo via Bun workspaces (`web`, `server`, `packages/*`).
 
 ## Develop
 
+100% web — no install step beyond deps. One command opens it:
+
 ```bash
 bun install
-bun run dev          # web app on http://localhost:5173
+bun run dev          # starts the app AND auto-opens http://localhost:5173
 bun run dev:all      # web + tRPC server together
 ```
+
+`bun run dev` works from the repo root or from `web/`. It auto-opens a browser
+tab; AI only works under `bun run dev` (that's what runs the `/halo` proxy).
 
 ## Quality gates / browser QA routine
 
@@ -52,21 +66,22 @@ don't need a server running. It won't touch a dev server you have open on
 5173/5174. Point it at an already-running instance with `QA_BASE_URL=...`.
 Failures capture a screenshot + video + trace under `web/test-results/`.
 
-The suite (18 checks, real assertions) covers every main feature:
+The suite (20 checks, real assertions) covers every main feature:
 - `mup-qa` — icons render, reload-safe draft persistence, draft-list navigation,
   queue highlight, Markdown + DOCX export, no console errors.
 - `features-qa` — pomodoro countdown, focus mode, content-type switching +
   persistence, outline auto-generation + scroll (ECD-4), toolbar formatting.
 - `ai-qa` — a live halo/Gemma chat reply (ECD-7).
 - `core-flows` — draft create/delete, persona switch, font cycle, Save/File-It
-  status advance.
+  status advance, inbox capture → promote, priority sorting.
 
 ## Status
 
-Working: pick a persona, create/open/switch/delete drafts, write rich text,
-autosave + reload-safe persistence, switch content types, focus mode, Pomodoro,
-a live outline/TOC from headings (ECD-4), AI chat on the halo gateway (ECD-7),
-and export the current draft to Markdown, DOCX, and PDF/print (ECD-11).
+Working: capture ideas in the Inbox and promote them to drafts; a priority-sorted
+Writing Queue (High/Med/Low, with an "Up Next"); create/open/switch/delete drafts,
+write rich text, autosave + reload-safe persistence, switch content types, focus
+mode, Pomodoro, a live outline/TOC from headings (ECD-4), AI chat on the halo
+gateway (ECD-7), and export to Markdown, DOCX, and PDF/print (ECD-11).
 
 Deferred (see GitHub issues): inline comments (ECD-8), AI suggestions that edit
 the draft (ECD-9), persona prompt management UI (ECD-10), version history

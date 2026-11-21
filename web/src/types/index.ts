@@ -27,6 +27,7 @@ export interface Idea {
 
 export type DraftStatus = 'not-started' | 'outlining' | 'draft' | 'polish' | 'published';
 export type ContentType = 'article' | 'book' | 'social';
+export type Priority = 'high' | 'med' | 'low';
 
 export interface Draft {
   id: string;
@@ -35,6 +36,7 @@ export interface Draft {
   type: ContentType;
   personaId: PersonaId;
   status: DraftStatus;
+  priority?: Priority;
   createdAt: number;
   updatedAt: number;
   outline?: OutlineSection[];
