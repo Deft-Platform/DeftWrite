@@ -49,6 +49,10 @@ function blocks(n: PMNode): Paragraph[] {
       return [new Paragraph({ children: [new TextRun({ text: (n.content ?? []).map((c) => c.text ?? '').join(''), font: 'Consolas' })] })];
     case 'horizontalRule':
       return [new Paragraph({ thematicBreak: true, children: [] })];
+    case 'visual': {
+      const p = (n.attrs?.prompt as string) || 'visual';
+      return [new Paragraph({ children: [new TextRun({ text: `[Visual: ${p}]`, italics: true })] })];
+    }
     case 'bulletList':
       return (n.content ?? []).flatMap((li) =>
         (li.content ?? []).map((c) => new Paragraph({ children: runs(c.content), bullet: { level: 0 } }))

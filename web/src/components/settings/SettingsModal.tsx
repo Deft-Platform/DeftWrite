@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { PersonaId } from '@/types';
 
-type SettingsTab = 'ai' | 'personas';
+type SettingsTab = 'ai' | 'personas' | 'visuals';
 
 const PROVIDERS = [
   { id: 'platform', name: 'DeftAuthor', sub: 'Hosted & free', icon: 'cloud', iconColor: 'text-indigo-400' },
@@ -21,7 +21,7 @@ const MODELS: Record<string, string[]> = {
 };
 
 export function SettingsModal() {
-  const { aiConfig, setAIConfig, closeSettings, personas, activePersonaId, updatePersona, settingsOpen } = useApp();
+  const { aiConfig, setAIConfig, closeSettings, personas, activePersonaId, updatePersona, settingsOpen, visualStyle, setVisualStyle } = useApp();
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
   const [apiKey, setApiKey] = useState(aiConfig.apiKey || '');
   const [baseUrl, setBaseUrl] = useState(aiConfig.baseUrl || 'http://localhost:11434/v1');
@@ -97,7 +97,34 @@ export function SettingsModal() {
           >
             Personae
           </button>
+          <button
+            onClick={() => setActiveTab('visuals')}
+            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+              activeTab === 'visuals' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Visuals
+          </button>
         </div>
+
+        {activeTab === 'visuals' && (
+          <div className="space-y-3">
+            <p className="text-[10px] text-slate-500 leading-relaxed">
+              The house style sent with every visual the AI generates. Describe the look —
+              palette, type, shapes, and what kinds of figures to favor. Visuals are produced
+              as self-contained SVG in this style.
+            </p>
+            <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold block">Visual house style</label>
+            <textarea
+              value={visualStyle}
+              onChange={e => setVisualStyle(e.target.value)}
+              rows={9}
+              placeholder="Describe your house style for AI-generated visuals…"
+              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-md px-3 py-2 text-xs outline-none focus:border-indigo-500/50 transition-colors placeholder:text-slate-600 resize-none leading-relaxed"
+            />
+            <p className="text-[9px] text-slate-600">Saved automatically and applied to new generations.</p>
+          </div>
+        )}
 
         {activeTab === 'ai' && (
           <>

@@ -54,6 +54,10 @@ function block(n: PMNode, depth = 0): string {
       return '```\n' + inline(n.content) + '\n```';
     case 'horizontalRule':
       return '---';
+    case 'visual': {
+      const p = (n.attrs?.prompt as string) || 'visual';
+      return `> **Visual:** ${p}`;
+    }
     case 'bulletList':
       return (n.content ?? []).map((li) => listItem(li, '- ', depth)).join('\n');
     case 'orderedList':

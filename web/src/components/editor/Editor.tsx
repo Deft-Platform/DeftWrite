@@ -1,6 +1,7 @@
 import { Icon } from '@/components/ui/icon';
 import { useEditor, EditorContent, type Editor as TiptapEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { VisualNode } from './VisualNode';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useApp } from '@/contexts/AppContext';
@@ -54,10 +55,11 @@ const FONT_MAP: Record<string, string> = {
 interface EditorToolbarProps {
   onFocusMode: () => void;
   onToggleFormat: (action: string) => void;
+  onInsertVisual: () => void;
   activeFormats: string[];
 }
 
-function EditorToolbar({ onFocusMode, onToggleFormat, activeFormats }: EditorToolbarProps) {
+function EditorToolbar({ onFocusMode, onToggleFormat, onInsertVisual, activeFormats }: EditorToolbarProps) {
   const btnClass = (action: string) =>
     `p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700/60 transition-colors ${
       activeFormats.includes(action) ? 'tb-active' : ''
@@ -89,6 +91,15 @@ function EditorToolbar({ onFocusMode, onToggleFormat, activeFormats }: EditorToo
           {a.icon ? <Icon name={a.icon} className="w-4 h-4" /> : <span className="text-xs font-bold">{a.text}</span>}
         </button>
       ))}
+      <div className="w-px h-5 bg-slate-700/60 mx-1" />
+      <button
+        className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700/60 transition-colors flex items-center gap-1"
+        onClick={onInsertVisual}
+        title="Insert a visual (AI-generated figure)"
+      >
+        <Icon name="image" className="w-4 h-4" />
+        <span className="text-[10px] font-medium">Visual</span>
+      </button>
       <div className="flex-1" />
       <button
         className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700/60 transition-colors"
@@ -277,7 +288,7 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
 }
 
 export function MainEditor() {
-  const { aiConfig, fontFamily, setFontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft, setDocumentHeadings } = useApp();
+  const { aiConfig, fontFamily, setFontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft, setDocumentHeadings, insertVisualRef, insertVisual } = useApp();
   const cycleFont = useCallback(() => {
     const order = ['serif', 'sans', 'mono'] as const;
     const next = order[(order.indexOf(fontFamily as typeof order[number]) + 1) % order.length];
@@ -327,6 +338,13 @@ export function MainEditor() {
     forceSaveRef.current = forceFlushSave;
   }, [forceSaveRef, forceFlushSave]);
 
+  // Expose a visual inserter so the toolbar and co-pilot can drop in boxes.
+  useEffect(() => {
+    insertVisualRef.current = (attrs) => {
+      editorRef.current?.chain().focus().insertVisual(attrs ?? {}).run();
+    };
+  }, [insertVisualRef]);
+
   // Flush any pending save before the tab is hidden or unloaded, so a quick
   // reload/close can't lose the last few seconds of writing.
   useEffect(() => {
@@ -360,6 +378,7 @@ export function MainEditor() {
     extensions: [
       StarterKit,
       Underline,
+      VisualNode,
       Placeholder.configure({ placeholder: PLACEHOLDERS[activeContentType] || PLACEHOLDERS.article }),
     ],
     content: parseDraftContent(activeDraft?.content) as string,
@@ -461,6 +480,7 @@ export function MainEditor() {
           <EditorToolbar
             onFocusMode={toggleFocusMode}
             onToggleFormat={handleToggleFormat}
+            onInsertVisual={() => insertVisual()}
             activeFormats={activeFormats}
           />
           <EditorContentInner

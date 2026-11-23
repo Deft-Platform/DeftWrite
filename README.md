@@ -81,7 +81,19 @@ Working: capture ideas in the Inbox and promote them to drafts; a priority-sorte
 Writing Queue (High/Med/Low, with an "Up Next"); create/open/switch/delete drafts,
 write rich text, autosave + reload-safe persistence, switch content types, focus
 mode, Pomodoro, a live outline/TOC from headings (ECD-4), AI chat on the halo
-gateway (ECD-7), and export to Markdown, DOCX, and PDF/print (ECD-11).
+gateway (ECD-7), **Visual boxes** (see below), and export to Markdown, DOCX, and
+PDF/print (ECD-11).
+
+### Visuals
+
+Insert a **Visual** box in the editor ("Visual" in the toolbar). Click it to select
+it; the right sidebar becomes an iteration panel where you prompt and
+Generate/Regenerate — the model writes a self-contained SVG figure in your house
+style. Generation is async, so you keep writing while it builds. The co-pilot can
+also propose a visual ("Suggest Visual"): it drops a *Suggested* box with a prompt
+for you to approve and generate. The house style is configured in Settings →
+Visuals. Today the engine produces SVG via halo; raster image-gen / gif-sourcing
+can slot behind the same box later.
 
 Deferred (see GitHub issues): inline comments (ECD-8), AI suggestions that edit
 the draft (ECD-9), persona prompt management UI (ECD-10), version history
