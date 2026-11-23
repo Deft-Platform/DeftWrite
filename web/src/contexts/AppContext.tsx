@@ -1,5 +1,24 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { playPomodoroSound } from '@/lib/pomodoraudio';
+import { DEFAULT_VISUAL_STYLE } from '@/lib/visual';
+
+interface VisualSnapshot {
+  id: string;
+  prompt: string;
+  status: string;
+  svg: string;
+  role: string;
+}
+interface VisualInsertAttrs {
+  visualId?: string;
+  prompt?: string;
+  status?: string;
+  role?: string;
+}
+interface VisualNodeApi {
+  updateAttributes: (attrs: Record<string, unknown>) => void;
+  deleteNode: () => void;
+}
 import type {
   Persona, Idea, Draft, Comment, ChatMessage, AIConfig, FontFamily,
   SidebarView, PersonaId, DraftStatus, ContentType, PomodoroState
@@ -12,6 +31,7 @@ const STORAGE_KEY_IDEAS = 'deftwrite-ideas';
 const STORAGE_KEY_SETTINGS = 'deftwrite-settings';
 const STORAGE_KEY_AI = 'deftwrite-ai-config';
 const STORAGE_KEY_FONT = 'deftwrite-font-family';
+const STORAGE_KEY_VISUAL_STYLE = 'deftwrite-visual-style';
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
@@ -66,6 +86,20 @@ interface AppState extends PomodoroState {
   // Live table of contents, derived from the editor's headings (ECD-4).
   documentHeadings: { level: number; text: string }[];
   setDocumentHeadings: (headings: { level: number; text: string }[]) => void;
+
+  // Visuals: inline AI-generated figure boxes.
+  visualStyle: string;
+  setVisualStyle: (s: string) => void;
+  selectedVisualId: string | null;
+  setSelectedVisualId: (id: string | null) => void;
+  selectedVisual: VisualSnapshot | null;
+  syncVisual: (id: string, data: Omit<VisualSnapshot, 'id'>) => void;
+  registerVisual: (id: string, api: VisualNodeApi) => void;
+  unregisterVisual: (id: string) => void;
+  updateVisual: (id: string, attrs: Record<string, unknown>) => void;
+  removeVisual: (id: string) => void;
+  insertVisualRef: React.MutableRefObject<((attrs?: VisualInsertAttrs) => void) | null>;
+  insertVisual: (attrs?: VisualInsertAttrs) => void;
 
   // AI Chat
   chatMessages: Record<string, ChatMessage[]>; // key: draftId
@@ -299,6 +333,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [outlineSections, setOutlineSections] = useState<{ id: string; title: string; visible: boolean }[]>([]);
   const [documentHeadings, setDocumentHeadings] = useState<{ level: number; text: string }[]>([]);
 
+  // ── Visuals ────────────────────────────────────────────────────────────
+  const [visualStyle, setVisualStyle] = useState<string>(() =>
+    loadJSON<string>(STORAGE_KEY_VISUAL_STYLE, DEFAULT_VISUAL_STYLE)
+  );
+  const [selectedVisualId, setSelectedVisualId] = useState<string | null>(null);
+  const [selectedVisual, setSelectedVisual] = useState<VisualSnapshot | null>(null);
+  const visualRegistry = useRef<Map<string, VisualNodeApi>>(new Map());
+  const insertVisualRef = useRef<((attrs?: VisualInsertAttrs) => void) | null>(null);
+
+  const registerVisual = useCallback((id: string, api: VisualNodeApi) => {
+    visualRegistry.current.set(id, api);
+  }, []);
+  const unregisterVisual = useCallback((id: string) => {
+    visualRegistry.current.delete(id);
+  }, []);
+  const updateVisual = useCallback((id: string, attrs: Record<string, unknown>) => {
+    visualRegistry.current.get(id)?.updateAttributes(attrs);
+  }, []);
+  const removeVisual = useCallback((id: string) => {
+    visualRegistry.current.get(id)?.deleteNode();
+    setSelectedVisualId(null);
+  }, []);
+  const syncVisual = useCallback((id: string, data: Omit<VisualSnapshot, 'id'>) => {
+    setSelectedVisual({ id, ...data });
+  }, []);
+  const insertVisual = useCallback((attrs?: VisualInsertAttrs) => {
+    let visualId: string;
+    try {
+      visualId = `vis-${crypto.randomUUID().slice(0, 8)}`;
+    } catch {
+      visualId = `vis-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+    insertVisualRef.current?.({ ...attrs, visualId });
+    setSelectedVisualId(visualId);
+  }, []);
+
   // ── Persistence: drafts ────────────────────────────────────────────────
   useEffect(() => {
     saveJSON(STORAGE_KEY_DRAFTS, drafts);
@@ -326,6 +396,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveJSON(STORAGE_KEY_FONT, fontFamily);
   }, [fontFamily]);
+
+  // ── Persistence: visual house style ────────────────────────────────────
+  useEffect(() => {
+    saveJSON(STORAGE_KEY_VISUAL_STYLE, visualStyle);
+  }, [visualStyle]);
+
+  // Clear the selected-visual snapshot when nothing is selected.
+  useEffect(() => {
+    if (selectedVisualId === null) setSelectedVisual(null);
+  }, [selectedVisualId]);
 
   const activeDraft = activeDraftId ? drafts[activePersonaId]?.find(d => d.id === activeDraftId) ?? null : null;
 
@@ -603,6 +683,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setOutlineSections(prev => [...prev, { id: `section-${Date.now()}`, title, visible: true }]);
       },
       documentHeadings, setDocumentHeadings,
+      visualStyle, setVisualStyle,
+      selectedVisualId, setSelectedVisualId, selectedVisual,
+      syncVisual, registerVisual, unregisterVisual, updateVisual, removeVisual,
+      insertVisualRef, insertVisual,
       chatMessages, addChatMessage, clearChat,
       comments, addComment, addReply, dismissComment,
       sidebarView, activeThreadId, setSidebarView, setActiveThread: setActiveThreadId,
