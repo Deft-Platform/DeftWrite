@@ -322,9 +322,12 @@ function VisualPanel() {
      addChatMessage, setSidebarView, setActiveThread,
      comments, dismissComment, activeContentType, updateDraft, setActiveContentType,
      activeDraft, forceSaveContent, personas, activePersonaId, aiConfig,
-     selectedVisual, insertVisual,
+     selectedVisual, insertVisual, focusedSelection, setFocusedSelection, applySuggestion,
    } = useApp();
    const [suggestingVisual, setSuggestingVisual] = useState(false);
+   const [suggestion, setSuggestion] = useState<{ text: string; from: number; to: number } | null>(null);
+   const [rewriting, setRewriting] = useState(false);
+   const [iterateText, setIterateText] = useState('');
 
    const [saveFlash, setSaveFlash] = useState(false);
    const [showDrafts, setShowDrafts] = useState(false);
@@ -362,7 +365,43 @@ function VisualPanel() {
       body = body.trim().slice(0, 6000);
       if (body) parts.push(`Current draft:\n"""\n${body}\n"""`);
     }
+    if (focusedSelection) {
+      parts.push(
+        `The writer has SELECTED this passage. If their request concerns it, act on the selection; otherwise use the whole document:\n"""\n${focusedSelection.text.slice(0, 2000)}\n"""`
+      );
+    }
     return parts.join('\n\n');
+  };
+
+  // Rewrite the focused selection (or iterate the current suggestion) into a
+  // suggestion card the writer can Accept / Reject / Iterate.
+  const runRewrite = async (instruction: string) => {
+    const from = suggestion?.from ?? focusedSelection?.from;
+    const to = suggestion?.to ?? focusedSelection?.to;
+    const base = suggestion?.text ?? focusedSelection?.text;
+    if (from == null || to == null || !base || rewriting) return;
+    setRewriting(true);
+    try {
+      const reply = await chatComplete(
+        [
+          { role: 'system', content: 'You are a precise editor. Rewrite the given text following the instruction. Return ONLY the rewritten text — no preamble, no quotes, no explanation.' },
+          { role: 'user', content: `Instruction: ${instruction}\n\nText:\n"""\n${base}\n"""` },
+        ],
+        { model: aiConfig.model || undefined, maxTokens: 800 }
+      );
+      setSuggestion({ text: reply.trim(), from, to });
+    } catch {
+      /* leave prior suggestion; error is non-fatal */
+    } finally {
+      setRewriting(false);
+    }
+  };
+
+  const acceptSuggestion = () => {
+    if (!suggestion) return;
+    applySuggestion(suggestion.from, suggestion.to, suggestion.text);
+    setSuggestion(null);
+    setIterateText('');
   };
 
   const sendMessage = async (text: string) => {
@@ -554,6 +593,50 @@ function VisualPanel() {
       {/* Visual iteration takes over the panel when a visual box is selected */}
       {selectedVisual && <VisualPanel />}
 
+      {/* Co-pilot scope: the selected block/section */}
+      {focusedSelection && !suggestion && (
+        <div className="px-3 py-2 border-b border-slate-800 flex items-center gap-2 bg-slate-900/40">
+          <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-bold shrink-0">Focused</span>
+          <span className="text-[11px] text-slate-400 truncate flex-1">“{focusedSelection.text.slice(0, 80)}”</span>
+          <button onClick={() => setFocusedSelection(null)} title="Clear focus (use whole document)" className="p-0.5 text-slate-500 hover:text-slate-300 shrink-0">
+            <Icon name="x" className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Suggestion card: Accept / Reject / Iterate */}
+      {suggestion && (
+        <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/50">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Icon name="sparkles" className="w-3.5 h-3.5 text-indigo-300" />
+            <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Suggested rewrite</span>
+          </div>
+          <div className="max-h-40 overflow-y-auto no-scrollbar text-xs text-slate-300 leading-relaxed bg-slate-800/40 border border-slate-700/30 rounded-lg p-2 mb-2 whitespace-pre-wrap">
+            {suggestion.text}
+          </div>
+          <div className="flex gap-1.5">
+            <button onClick={acceptSuggestion} className="flex-1 px-2 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-md text-[11px] font-medium transition-colors">Accept</button>
+            <button onClick={() => { setSuggestion(null); setIterateText(''); }} className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-md text-[11px] transition-colors">Reject</button>
+          </div>
+          <div className="flex gap-1.5 mt-1.5">
+            <input
+              value={iterateText}
+              onChange={e => setIterateText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && iterateText.trim()) { runRewrite(iterateText.trim()); setIterateText(''); } }}
+              placeholder="Iterate: e.g. make it punchier…"
+              className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-md px-2 py-1 text-[11px] outline-none focus:border-indigo-500/50 placeholder:text-slate-600"
+            />
+            <button
+              onClick={() => { if (iterateText.trim()) { runRewrite(iterateText.trim()); setIterateText(''); } }}
+              disabled={rewriting || !iterateText.trim()}
+              className="px-2 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-md text-[11px] transition-colors disabled:opacity-40"
+            >
+              {rewriting ? '…' : 'Go'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic panel based on content type */}
       {(activeContentType === 'article' || activeContentType === 'book') && <OutlinePanel />}
       {activeContentType === 'book' && <BookOutlinePanel />}
@@ -588,6 +671,24 @@ function VisualPanel() {
           <div ref={chatEndRef} />
         </ScrollArea>
 
+        {/* Rewrite actions — operate on the focused selection */}
+        {focusedSelection && !suggestion && (
+          <div className="px-3 pb-2">
+            <div className="flex gap-1.5 flex-wrap">
+              {['Rewrite', 'Shorten', 'Lengthen', 'Fix grammar'].map(label => (
+                <button
+                  key={label}
+                  onClick={() => runRewrite(label === 'Rewrite' ? 'Rewrite this more clearly' : label)}
+                  disabled={rewriting}
+                  className="px-2 py-1 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full transition-colors disabled:opacity-40"
+                >
+                  {rewriting && label === 'Rewrite' ? 'Rewriting…' : label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="px-3 pb-2">
           <div className="flex gap-1.5 flex-wrap">
@@ -617,11 +718,11 @@ function VisualPanel() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => sendMessage('Suggest an edit to improve this draft.')}
+              onClick={() => (focusedSelection ? runRewrite('Improve this passage') : sendMessage('Suggest an edit to improve this draft.'))}
               className="flex-1 px-2 py-1.5 text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded transition-colors border border-amber-500/20 flex items-center justify-center gap-1"
             >
               <Icon name="pencil" className="w-3 h-3" />
-              Suggest Edit
+              {focusedSelection ? 'Rewrite selection' : 'Suggest Edit'}
             </Button>
           </div>
           <div className="relative">

@@ -101,6 +101,13 @@ interface AppState extends PomodoroState {
   insertVisualRef: React.MutableRefObject<((attrs?: VisualInsertAttrs) => void) | null>;
   insertVisual: (attrs?: VisualInsertAttrs) => void;
 
+  // Co-pilot scope: the block/section the writer selected in the editor.
+  focusedSelection: { text: string; from: number; to: number } | null;
+  setFocusedSelection: (sel: { text: string; from: number; to: number } | null) => void;
+  // Apply an accepted suggestion by replacing a doc range with new text.
+  replaceRangeRef: React.MutableRefObject<((from: number, to: number, text: string) => void) | null>;
+  applySuggestion: (from: number, to: number, text: string) => void;
+
   // AI Chat
   chatMessages: Record<string, ChatMessage[]>; // key: draftId
   addChatMessage: (draftId: string, message: ChatMessage) => void;
@@ -358,6 +365,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const syncVisual = useCallback((id: string, data: Omit<VisualSnapshot, 'id'>) => {
     setSelectedVisual({ id, ...data });
   }, []);
+  // ── Co-pilot selection scope ───────────────────────────────────────────
+  const [focusedSelection, setFocusedSelection] = useState<{ text: string; from: number; to: number } | null>(null);
+  const replaceRangeRef = useRef<((from: number, to: number, text: string) => void) | null>(null);
+  const applySuggestion = useCallback((from: number, to: number, text: string) => {
+    replaceRangeRef.current?.(from, to, text);
+    setFocusedSelection(null);
+  }, []);
+
   const insertVisual = useCallback((attrs?: VisualInsertAttrs) => {
     let visualId: string;
     try {
@@ -688,6 +703,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       selectedVisualId, setSelectedVisualId, selectedVisual,
       syncVisual, registerVisual, unregisterVisual, updateVisual, removeVisual,
       insertVisualRef, insertVisual,
+      focusedSelection, setFocusedSelection, replaceRangeRef, applySuggestion,
       chatMessages, addChatMessage, clearChat,
       comments, addComment, addReply, dismissComment,
       sidebarView, activeThreadId, setSidebarView, setActiveThread: setActiveThreadId,

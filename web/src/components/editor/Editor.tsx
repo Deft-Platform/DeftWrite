@@ -288,7 +288,7 @@ function EditorContentInner({ editor, title, onTitleChange, wordCount, charCount
 }
 
 export function MainEditor() {
-  const { aiConfig, fontFamily, setFontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft, setDocumentHeadings, insertVisualRef, insertVisual } = useApp();
+  const { aiConfig, fontFamily, setFontFamily, updateDraft, focusMode, toggleFocusMode, activeContentType, activeDraftId, activeDraft, setDocumentHeadings, insertVisualRef, insertVisual, setFocusedSelection, replaceRangeRef } = useApp();
   const cycleFont = useCallback(() => {
     const order = ['serif', 'sans', 'mono'] as const;
     const next = order[(order.indexOf(fontFamily as typeof order[number]) + 1) % order.length];
@@ -345,6 +345,17 @@ export function MainEditor() {
     };
   }, [insertVisualRef]);
 
+  // Expose a range replacer so an accepted co-pilot suggestion can edit the doc.
+  useEffect(() => {
+    replaceRangeRef.current = (from, to, text) => {
+      const html = text
+        .split(/\n{2,}/)
+        .map((p) => `<p>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>`)
+        .join('');
+      editorRef.current?.chain().focus().insertContentAt({ from, to }, html).run();
+    };
+  }, [replaceRangeRef]);
+
   // Flush any pending save before the tab is hidden or unloaded, so a quick
   // reload/close can't lose the last few seconds of writing.
   useEffect(() => {
@@ -382,6 +393,13 @@ export function MainEditor() {
       Placeholder.configure({ placeholder: PLACEHOLDERS[activeContentType] || PLACEHOLDERS.article }),
     ],
     content: parseDraftContent(activeDraft?.content) as string,
+    onSelectionUpdate: ({ editor: te }) => {
+      const { from, to } = te.state.selection;
+      if (to > from) {
+        const text = te.state.doc.textBetween(from, to, ' ').trim();
+        if (text) setFocusedSelection({ text, from, to });
+      }
+    },
     onUpdate: ({ editor: te }) => {
       if (!te) return;
       editorRef.current = te;
