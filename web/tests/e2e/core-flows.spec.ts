@@ -11,23 +11,26 @@ async function reset(page: import('@playwright/test').Page) {
 }
 
 async function createDraft(page: import('@playwright/test').Page, title: string) {
-  await page.getByRole('button', { name: /New draft/i }).click();
-  await page.getByPlaceholder('Draft title...').fill(title);
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await page.getByPlaceholder(/Capture an idea/).fill(title);
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
 }
 
 test.describe('DeftWrite core flows', () => {
   test.beforeEach(async ({ page }) => reset(page));
 
-  test('draft lifecycle: create then delete', async ({ page }) => {
+  test('capture adds an item and delete requires confirmation', async ({ page }) => {
     await createDraft(page, 'Temp Draft');
     const queue = page.locator('aside').first();
     await expect(queue.getByText('Temp Draft')).toBeVisible();
 
-    // The new draft is active; delete it via its row button.
     const active = page.locator('[data-active-draft="true"]');
     await active.hover();
-    await active.getByRole('button', { name: 'Delete draft' }).click();
+    // One click no longer deletes — it asks to confirm.
+    await active.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(active.getByText('Delete?')).toBeVisible();
+    await expect(queue.getByText('Temp Draft')).toBeVisible(); // still there
+
+    await active.getByRole('button', { name: 'Confirm delete' }).click();
     await expect(queue.getByText('Temp Draft')).toHaveCount(0);
   });
 
@@ -60,32 +63,29 @@ test.describe('DeftWrite core flows', () => {
     await expect(page.locator('[data-active-draft="true"]')).toContainText('polish');
   });
 
-  test('inbox: capture an idea and promote it to a draft', async ({ page }) => {
-    await page.getByPlaceholder('Capture an idea...').fill('Write about evidence');
-    await page.getByPlaceholder('Capture an idea...').press('Enter');
+  test('a captured item is an idea; writing into it promotes it to a draft', async ({ page }) => {
+    await createDraft(page, 'Just an idea');
+    const item = page.locator('[data-active-draft="true"]');
+    await expect(item).toHaveAttribute('data-idea', 'true');
+    await expect(item).toContainText('Idea');
 
-    const sidebar = page.locator('aside').first();
-    const ideaRow = sidebar.locator('div', { hasText: 'Write about evidence' }).last();
-    await expect(ideaRow).toBeVisible();
-
-    await ideaRow.getByTitle('Start a draft from this idea').click();
-    // Promoted: editor opens on the new draft, titled from the idea.
-    await expect(page.locator('input[placeholder="Untitled"]')).toHaveValue('Write about evidence');
-    // And it leaves the inbox.
-    await expect(sidebar.getByText('Write about evidence', { exact: true })).toHaveCount(1);
+    // Writing into it promotes it to a draft (no longer an idea).
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('Now it has content.');
+    await expect(item).not.toHaveAttribute('data-idea', 'true');
+    await expect(item).toContainText('draft');
   });
 
-  test('priority sorts the queue above recency (Up Next)', async ({ page }) => {
-    await createDraft(page, 'A Draft'); // older
-    await createDraft(page, 'B Draft'); // newer -> starts on top (both Med)
+  test('ideas sink below focused drafts; priority promotes an idea (Up Next)', async ({ page }) => {
+    await createDraft(page, 'A Draft'); // older idea
+    await createDraft(page, 'B Draft'); // newer idea -> top among ideas (by recency)
 
     const queue = page.locator('aside').first();
     await expect(queue.locator('[data-priority]').first()).toContainText('B Draft');
 
-    // Raise A Draft to High (Med -> Low -> High): it should jump to the top.
+    // One click on A's priority chip (none -> High) focuses it; it jumps to top.
     const aItem = queue.locator('[data-priority]', { hasText: 'A Draft' });
-    await aItem.getByTitle(/Cycle priority/).click();
-    await aItem.getByTitle(/Cycle priority/).click();
+    await aItem.getByTitle(/priority/).click();
 
     const top = queue.locator('[data-priority]').first();
     await expect(top).toContainText('A Draft');

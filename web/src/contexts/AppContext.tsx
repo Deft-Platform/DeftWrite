@@ -488,14 +488,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createDraft = useCallback((title: string, type: ContentType) => {
+    // A fresh capture is a lightweight "idea": not-started, no priority, so it
+    // sits in the queue below focused drafts until you open it and write.
     const newDraft: Draft = {
       id: `draft-${Date.now()}`,
       title,
       content: '',
       type,
       personaId: activePersonaId,
-      status: 'draft',
-      priority: 'med',
+      status: 'not-started',
       createdAt: Date.now(),
       updatedAt: Date.now(),
       comments: [],

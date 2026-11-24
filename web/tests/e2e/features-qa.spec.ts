@@ -57,9 +57,8 @@ test.describe('DeftWrite feature QA', () => {
   });
 
   test('ECD-4: outline auto-generates from document headings and scrolls', async ({ page }) => {
-    await page.getByRole('button', { name: /New draft/i }).click();
-    await page.getByPlaceholder('Draft title...').fill('Outline Test');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByPlaceholder(/Capture an idea/).fill('Outline Test');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
     const editor = page.locator('.ProseMirror');
     await editor.click();
     // Markdown input rules in StarterKit turn "# " / "## " into headings.
@@ -77,9 +76,8 @@ test.describe('DeftWrite feature QA', () => {
   });
 
   test('editor toolbar formatting applies to the document', async ({ page }) => {
-    await page.getByRole('button', { name: /New draft/i }).click();
-    await page.getByPlaceholder('Draft title...').fill('Format Test');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByPlaceholder(/Capture an idea/).fill('Format Test');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
     const editor = page.locator('.ProseMirror');
     await editor.click();
     await page.keyboard.type('bold me');

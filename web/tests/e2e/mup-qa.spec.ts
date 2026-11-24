@@ -48,9 +48,8 @@ test.describe('DeftWrite MUP QA', () => {
 
   test('draft content survives a reload (no raw JSON dumped into editor)', async ({ page }) => {
     // Create a draft
-    await page.getByRole('button', { name: /New draft/i }).click();
-    await page.getByPlaceholder('Draft title...').fill('Persistence Test');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByPlaceholder(/Capture an idea/).fill('Persistence Test');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
 
     // Type into the editor
     const editor = page.locator('.ProseMirror');
@@ -78,9 +77,8 @@ test.describe('DeftWrite MUP QA', () => {
   test('clicking a draft in the management panel opens it', async ({ page }) => {
     // Create two drafts
     for (const t of ['Alpha Draft', 'Beta Draft']) {
-      await page.getByRole('button', { name: /New draft/i }).click();
-      await page.getByPlaceholder('Draft title...').fill(t);
-      await page.getByRole('button', { name: 'Create', exact: true }).click();
+      await page.getByPlaceholder(/Capture an idea/).fill(t);
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
     }
     // Open the drafts (folder) panel in the right sidebar
     await page.getByTitle('View drafts').click();
@@ -94,9 +92,8 @@ test.describe('DeftWrite MUP QA', () => {
 
   test('writing queue highlights the draft you actually opened', async ({ page }) => {
     for (const t of ['First Draft', 'Second Draft']) {
-      await page.getByRole('button', { name: /New draft/i }).click();
-      await page.getByPlaceholder('Draft title...').fill(t);
-      await page.getByRole('button', { name: 'Create', exact: true }).click();
+      await page.getByPlaceholder(/Capture an idea/).fill(t);
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
     }
     // "Second Draft" is newest (top). Open "First Draft" and assert it is the
     // highlighted item, not the top one.
@@ -107,9 +104,8 @@ test.describe('DeftWrite MUP QA', () => {
   });
 
   test('markdown export produces real markdown for the current draft', async ({ page }) => {
-    await page.getByRole('button', { name: /New draft/i }).click();
-    await page.getByPlaceholder('Draft title...').fill('Export Me');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByPlaceholder(/Capture an idea/).fill('Export Me');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
 
     const editor = page.locator('.ProseMirror');
     await editor.click();
@@ -125,9 +121,8 @@ test.describe('DeftWrite MUP QA', () => {
   });
 
   test('docx export downloads a non-empty .docx (ECD-11)', async ({ page }) => {
-    await page.getByRole('button', { name: /New draft/i }).click();
-    await page.getByPlaceholder('Draft title...').fill('Docx Me');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByPlaceholder(/Capture an idea/).fill('Docx Me');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
     const editor = page.locator('.ProseMirror');
     await editor.click();
     await page.keyboard.type('Body for the docx file.');
