@@ -9,9 +9,8 @@ async function setup(page: import('@playwright/test').Page) {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForLoadState('networkidle');
-  await page.getByRole('button', { name: /New draft/i }).click();
-  await page.getByPlaceholder('Draft title...').fill('Visual Test');
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await page.getByPlaceholder(/Capture an idea/).fill('Visual Test');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
 }
 
 const insertVisual = (page: import('@playwright/test').Page) =>

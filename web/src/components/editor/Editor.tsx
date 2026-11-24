@@ -412,6 +412,13 @@ export function MainEditor() {
     setDocumentHeadings(extractHeadings(editor.getJSON()));
   }, [editor, activeDraftId]);
 
+  // Writing into a captured idea promotes it to a draft (so it rises in the queue).
+  useEffect(() => {
+    if (activeDraft && activeDraft.status === 'not-started' && wordCount > 0) {
+      updateDraft(activeDraft.id, { status: 'draft' });
+    }
+  }, [wordCount, activeDraft, updateDraft]);
+
   // Esc key to exit focus mode
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {

@@ -77,8 +77,10 @@ The suite (20 checks, real assertions) covers every main feature:
 
 ## Status
 
-Working: capture ideas in the Inbox and promote them to drafts; a priority-sorted
-Writing Queue (High/Med/Low, with an "Up Next"); create/open/switch/delete drafts,
+Working: one **Queue** that holds ideas and drafts together — capture a line and
+it enters as a lightweight idea; click it to start writing and it promotes to a
+draft and rises above untouched ideas. Priority chips (High/Med/Low) focus items,
+with an "Up Next" on top; deleting asks to confirm first. Open/switch items,
 write rich text, autosave + reload-safe persistence, switch content types, focus
 mode, Pomodoro, a live outline/TOC from headings (ECD-4), AI chat on the halo
 gateway (ECD-7), **Visual boxes** (see below), and export to Markdown, DOCX, and

@@ -15,9 +15,8 @@ test.describe('DeftWrite AI chat', () => {
   });
 
   test('chat returns a real model reply (not the "not configured" stub)', async ({ page }) => {
-    await page.getByRole('button', { name: /New draft/i }).click();
-    await page.getByPlaceholder('Draft title...').fill('AI Test');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByPlaceholder(/Capture an idea/).fill('AI Test');
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
 
     await page.getByPlaceholder('Ask anything...').fill('Respond with exactly the word READY and nothing else.');
     await page.getByPlaceholder('Ask anything...').press('Enter');
