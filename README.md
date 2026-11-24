@@ -83,8 +83,18 @@ draft and rises above untouched ideas. Priority chips (High/Med/Low) focus items
 with an "Up Next" on top; deleting asks to confirm first. Open/switch items,
 write rich text, autosave + reload-safe persistence, switch content types, focus
 mode, Pomodoro, a live outline/TOC from headings (ECD-4), AI chat on the halo
-gateway (ECD-7), **Visual boxes** (see below), and export to Markdown, DOCX, and
+gateway (ECD-7), a **scoped co-pilot** with Accept/Reject/Iterate suggestions
+(ECD-9, see below), **Visual boxes** (see below), and export to Markdown, DOCX, and
 PDF/print (ECD-11).
+
+### Co-pilot (scoped chat + suggestions)
+
+Select a block or section in the editor and the right sidebar scopes to it — a
+"Focused" chip shows the passage (clear it to go back to the whole document). For
+general chat the model gets both the selection and the full draft and decides
+which to act on. Rewrite actions (Rewrite / Shorten / Lengthen / Fix grammar, or
+"Rewrite selection") return a **suggestion card** you can **Accept** (applies the
+change to the doc), **Reject**, or **Iterate** (refine with another instruction).
 
 ### Visuals
 
