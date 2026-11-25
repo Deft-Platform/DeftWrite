@@ -34,26 +34,38 @@ test.describe('DeftWrite feature QA', () => {
     await expect(page.locator('aside').first()).toBeVisible();
   });
 
-  test('ECD-3: content-type switching swaps the right-sidebar panel', async ({ page }) => {
-    // Book -> book outline panel appears.
-    await page.getByRole('button', { name: 'Book', exact: true }).click();
+  async function captureAs(page: import('@playwright/test').Page, title: string, type: string) {
+    await page.getByLabel('Content type').selectOption(type);
+    await page.getByPlaceholder(/Capture an idea/).fill(title);
+    await page.getByPlaceholder(/Capture an idea/).press('Enter');
+  }
+
+  test('ECD-3: the draft content type drives the right-sidebar panel', async ({ page }) => {
+    await captureAs(page, 'My Book', 'book');
     await expect(page.getByText('Book Outline')).toBeVisible();
-    // Social -> social post mode panel appears, outline gone.
-    await page.getByRole('button', { name: 'Social', exact: true }).click();
+
+    await captureAs(page, 'My Post', 'post');
     await expect(page.getByText('Social Post Mode')).toBeVisible();
     await expect(page.getByText('Book Outline')).toHaveCount(0);
-    // Article -> neither special panel.
-    await page.getByRole('button', { name: 'Article', exact: true }).click();
+
+    await captureAs(page, 'My Article', 'article');
     await expect(page.getByText('Social Post Mode')).toHaveCount(0);
     await expect(page.getByText('Book Outline')).toHaveCount(0);
+    await expect(page.getByText('Outline', { exact: true })).toBeVisible(); // generic outline
   });
 
-  test('ECD-3: the chosen content type persists across reload', async ({ page }) => {
-    await page.getByRole('button', { name: 'Book', exact: true }).click();
+  test('ECD-3: a draft keeps its content type across reload', async ({ page }) => {
+    await captureAs(page, 'Persisted Book', 'book');
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('chapter one'); // make it a real draft
     await expect(page.getByText('Book Outline')).toBeVisible();
+
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Book Outline')).toBeVisible();
+    const sidebar = page.locator('aside').first();
+    await sidebar.getByRole('button', { name: /^Drafts/ }).click(); // expand
+    await sidebar.getByText('Persisted Book').click();
+    await expect(page.getByText('Book Outline')).toBeVisible(); // type persisted on the draft
   });
 
   test('ECD-4: outline auto-generates from document headings and scrolls', async ({ page }) => {

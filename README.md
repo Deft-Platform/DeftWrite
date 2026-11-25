@@ -1,10 +1,12 @@
 # DeftWrite
 
-A focused producer's cockpit for one creator: capture ideas, see what's highest
-priority, pick up the top one and draft it (Tiptap editor, AI, outline, focus
-mode, Pomodoro), then export/publish it. The whole loop lives in one place —
-**idea → prioritized queue → draft → feedback → publish → done** — so the writing
-surface and the "what to work on next" tracker aren't split across two tools.
+A focused producer's cockpit for one creator: capture ideas, work **one thing at
+a time**, draft it (Tiptap editor, AI, outline, focus mode, Pomodoro), then
+export/publish it. The queue has three tiers — a single **Now** slot for what
+you're working on, with **Drafts** and **Ideas** tucked into collapsed sections
+below — so half-finished work doesn't pile up or invite constant context-switching.
+Capturing a new idea stays one line; pick a content type (Post, Email, Article,
+Whitepaper, Course, Book) right there.
 
 Tier 2 (staff-only). Prototype stage: draft state is client-only (localStorage);
 the tRPC server and Drizzle schema under `server/` and `packages/db/` are
@@ -77,10 +79,10 @@ The suite (20 checks, real assertions) covers every main feature:
 
 ## Status
 
-Working: one **Queue** that holds ideas and drafts together — capture a line and
-it enters as a lightweight idea; click it to start writing and it promotes to a
-draft and rises above untouched ideas. Priority chips (High/Med/Low) focus items,
-with an "Up Next" on top; deleting asks to confirm first. Open/switch items,
+Working: a focus Queue — a single **Now** slot plus collapsed **Drafts (N)** and
+**Ideas (N)** sections; capture a line (choose its content type) and it becomes
+Now; writing into an idea promotes it to a draft; deleting asks to confirm first.
+Open/switch items,
 write rich text, autosave + reload-safe persistence, switch content types, focus
 mode, Pomodoro, a live outline/TOC from headings (ECD-4), AI chat on the halo
 gateway (ECD-7), a **scoped co-pilot** with Accept/Reject/Iterate suggestions

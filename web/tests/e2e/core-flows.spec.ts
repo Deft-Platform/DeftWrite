@@ -53,43 +53,42 @@ test.describe('DeftWrite core flows', () => {
     await expect(page.getByRole('button', { name: 'Inter', exact: true })).toBeVisible();
   });
 
-  test('Save / File It advances the draft status', async ({ page }) => {
+  test('Save / File It flashes Saved', async ({ page }) => {
     await createDraft(page, 'Advance Me');
     await page.locator('.ProseMirror').click();
     await page.keyboard.type('Some content.');
 
     await page.getByRole('button', { name: /Save \/ File It/ }).click();
-    // A new draft starts at "draft"; the flow advances it to "polish".
-    await expect(page.locator('[data-active-draft="true"]')).toContainText('polish');
+    await expect(page.getByText('Saved')).toBeVisible();
   });
 
   test('a captured item is an idea; writing into it promotes it to a draft', async ({ page }) => {
     await createDraft(page, 'Just an idea');
-    const item = page.locator('[data-active-draft="true"]');
-    await expect(item).toHaveAttribute('data-idea', 'true');
-    await expect(item).toContainText('Idea');
+    const now = page.locator('[data-active-draft="true"]'); // the Now card
+    await expect(now).toHaveAttribute('data-idea', 'true');
+    await expect(now).toContainText('Idea');
 
     // Writing into it promotes it to a draft (no longer an idea).
     await page.locator('.ProseMirror').click();
     await page.keyboard.type('Now it has content.');
-    await expect(item).not.toHaveAttribute('data-idea', 'true');
-    await expect(item).toContainText('draft');
+    await expect(now).not.toHaveAttribute('data-idea', 'true');
+    await expect(now).toContainText('Draft');
   });
 
-  test('ideas sink below focused drafts; priority promotes an idea (Up Next)', async ({ page }) => {
-    await createDraft(page, 'A Draft'); // older idea
-    await createDraft(page, 'B Draft'); // newer idea -> top among ideas (by recency)
+  test('queue tiers: active item is Now; others fall into Drafts / Ideas', async ({ page }) => {
+    await createDraft(page, 'First Idea');  // becomes Now
+    await createDraft(page, 'Second Idea'); // now Now; First Idea drops to Ideas
 
-    const queue = page.locator('aside').first();
-    await expect(queue.locator('[data-priority]').first()).toContainText('B Draft');
+    const sidebar = page.locator('aside').first();
+    // Now shows the most recent capture.
+    await expect(sidebar.locator('[data-active-draft="true"]')).toContainText('Second Idea');
+    // First Idea is tucked into the collapsed Ideas section.
+    await expect(sidebar.getByText('First Idea')).toHaveCount(0);
+    await sidebar.getByRole('button', { name: /^Ideas/ }).click(); // expand
+    await expect(sidebar.getByText('First Idea')).toBeVisible();
 
-    // One click on A's priority chip (none -> High) focuses it; it jumps to top.
-    const aItem = queue.locator('[data-priority]', { hasText: 'A Draft' });
-    await aItem.getByTitle(/priority/).click();
-
-    const top = queue.locator('[data-priority]').first();
-    await expect(top).toContainText('A Draft');
-    await expect(top).toContainText('Up Next');
-    await expect(top).toHaveAttribute('data-priority', 'high');
+    // Opening it makes it the Now item.
+    await sidebar.getByText('First Idea').click();
+    await expect(sidebar.locator('[data-active-draft="true"]')).toContainText('First Idea');
   });
 });

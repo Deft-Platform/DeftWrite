@@ -41,9 +41,12 @@ function parseDraftContent(raw: string | undefined): unknown {
 }
 
 const PLACEHOLDERS: Record<string, string> = {
-  article: 'Start writing your article...\n\nTip: Use H2 and H3 headings to create sections. The outline panel will auto-generate from your headings.',
-  book: 'Begin your book...\n\nTip: Create parts and chapters in the outline panel on the right. Each chapter can be expanded into sections.',
-  social: 'Draft your social post...\n\nChoose between single post, thread, or cross-platform mode below.',
+  post: 'Draft your post…\n\nKeep it tight. One idea, one hook.',
+  email: 'Write your email…\n\nSubject line in the title, body here.',
+  article: 'Start writing your article…\n\nTip: Use H2 and H3 headings to create sections. The outline auto-generates from your headings.',
+  whitepaper: 'Begin your whitepaper…\n\nTip: Structure it with headings; the outline on the right tracks your sections.',
+  course: 'Outline your course…\n\nTip: Use headings for modules and lessons; the outline tracks them.',
+  book: 'Begin your book…\n\nTip: Create parts and chapters in the outline panel on the right.',
 };
 
 const FONT_MAP: Record<string, string> = {

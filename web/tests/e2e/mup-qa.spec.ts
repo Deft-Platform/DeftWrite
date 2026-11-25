@@ -62,10 +62,12 @@ test.describe('DeftWrite MUP QA', () => {
       .poll(async () => await page.evaluate(() => localStorage.getItem('deftwrite-drafts') || ''))
       .toContain('quick brown fox');
 
-    // Reload and reopen the draft
+    // Reload and reopen the draft (it's tucked in the collapsed Drafts section)
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.getByText('Persistence Test').click();
+    const sidebar = page.locator('aside').first();
+    await sidebar.getByRole('button', { name: /^Drafts/ }).click();
+    await sidebar.getByText('Persistence Test').click();
 
     const reopened = page.locator('.ProseMirror');
     await expect(reopened).toContainText('The quick brown fox jumps over the lazy dog.');
@@ -95,9 +97,11 @@ test.describe('DeftWrite MUP QA', () => {
       await page.getByPlaceholder(/Capture an idea/).fill(t);
     await page.getByPlaceholder(/Capture an idea/).press('Enter');
     }
-    // "Second Draft" is newest (top). Open "First Draft" and assert it is the
-    // highlighted item, not the top one.
-    await page.getByText('First Draft', { exact: true }).first().click();
+    // "Second Draft" is the Now item; "First Draft" is in the collapsed Ideas
+    // section. Open it and assert it becomes the single highlighted Now item.
+    const sidebar = page.locator('aside').first();
+    await sidebar.getByRole('button', { name: /^Ideas/ }).click();
+    await sidebar.getByText('First Draft', { exact: true }).click();
     const highlighted = page.locator('[data-active-draft="true"]');
     await expect(highlighted).toHaveCount(1);
     await expect(highlighted).toContainText('First Draft');
