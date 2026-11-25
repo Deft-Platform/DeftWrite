@@ -500,7 +500,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const openDraft = useCallback((draftId: string) => {
     setActiveDraftId(draftId);
-  }, []);
+    // Follow the opened draft's own content type (set at capture).
+    const d = Object.values(drafts).flat().find(x => x.id === draftId);
+    if (d?.type) setActiveContentTypeState(d.type);
+  }, [drafts]);
 
   const createDraft = useCallback((title: string, type: ContentType) => {
     // A fresh capture is a lightweight "idea": not-started, no priority, so it
@@ -521,6 +524,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       [activePersonaId]: [newDraft, ...(prev[activePersonaId] || [])],
     }));
     setActiveDraftId(newDraft.id);
+    setActiveContentTypeState(type);
     setSidebarView('chat');
   }, [activePersonaId]);
 

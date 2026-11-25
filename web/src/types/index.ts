@@ -26,7 +26,17 @@ export interface Idea {
 }
 
 export type DraftStatus = 'not-started' | 'outlining' | 'draft' | 'polish' | 'published';
-export type ContentType = 'article' | 'book' | 'social';
+export type ContentType = 'post' | 'email' | 'article' | 'whitepaper' | 'course' | 'book';
+
+export const CONTENT_TYPE_ORDER: ContentType[] = ['post', 'email', 'article', 'whitepaper', 'course', 'book'];
+export const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
+  post: 'Post',
+  email: 'Email',
+  article: 'Article',
+  whitepaper: 'Whitepaper',
+  course: 'Course',
+  book: 'Book',
+};
 export type Priority = 'high' | 'med' | 'low';
 
 export interface Draft {

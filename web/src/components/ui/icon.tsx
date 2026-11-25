@@ -1,9 +1,9 @@
 import {
   ArrowLeft, ArrowRight, ArrowUp, Bold, Book, BookOpen, Check, ChevronDown,
   ChevronUp, Cloud, Code, Cpu, Download, Edit3, Eye, FilePlus, FileText,
-  FolderTree, Image, Info, Italic, Linkedin, List, ListOrdered, Maximize, MessageCircle,
-  Minus, Pencil, Plus, Quote, RefreshCw, Save, Share2, ShieldCheck, Sparkles, Strikethrough,
-  Trash2, Twitter, X, type LucideIcon,
+  FolderTree, GraduationCap, Image, Info, Italic, Linkedin, List, ListOrdered, Mail, Maximize,
+  MessageCircle, MessageSquare, Minus, Newspaper, Pencil, Plus, Quote, RefreshCw, Save, Share2,
+  ShieldCheck, Sparkles, Strikethrough, Trash2, Twitter, X, type LucideIcon,
 } from 'lucide-react';
 
 // Central registry mapping the kebab-case icon names used across the app to
@@ -29,8 +29,12 @@ const REGISTRY: Record<string, LucideIcon> = {
   'file-plus': FilePlus,
   'file-text': FileText,
   'folder-tree': FolderTree,
+  'graduation-cap': GraduationCap,
   image: Image,
   info: Info,
+  mail: Mail,
+  'message-square': MessageSquare,
+  newspaper: Newspaper,
   italic: Italic,
   linkedin: Linkedin,
   list: List,

@@ -11,11 +11,6 @@ import { chatComplete, type ChatMsg } from '@/lib/ai';
 import { draftToMarkdown } from '@/lib/markdown';
 import { generateVisualSvg } from '@/lib/visual';
 
-const CONTENT_TYPES = [
-  { id: 'article', label: 'Article', icon: 'file-text', placeholder: 'Start writing your article...' },
-  { id: 'book', label: 'Book', icon: 'book', placeholder: 'Begin your book...' },
-  { id: 'social', label: 'Social', icon: 'share-2', placeholder: 'Draft your social post...' },
-] as const;
 
 const QUICK_ACTIONS = [
   { prompt: 'Give a short, specific critique of this draft: what is working and the two or three most impactful things to change.', label: 'Critique' },
@@ -320,7 +315,7 @@ function VisualPanel() {
    const {
      sidebarView, activeThreadId, chatMessages, activeDraftId,
      addChatMessage, setSidebarView, setActiveThread,
-     comments, dismissComment, activeContentType, updateDraft, setActiveContentType,
+     comments, dismissComment, activeContentType, updateDraft,
      activeDraft, forceSaveContent, personas, activePersonaId, aiConfig,
      selectedVisual, insertVisual, focusedSelection, setFocusedSelection, applySuggestion,
    } = useApp();
@@ -570,24 +565,6 @@ function VisualPanel() {
             </button>
           </div>
         </div>
-        <label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1 block">Content Type</label>
-        <div className="flex gap-1">
-          {CONTENT_TYPES.map(ct => (
-            <button
-              key={ct.id}
-              onClick={() => setActiveContentType(ct.id as 'article' | 'book' | 'social')}
-              className={`flex-1 flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-md text-[10px] transition-all ${
-                activeContentType === ct.id
-                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
-              }`}
-              title={ct.placeholder.split('\n')[0]}
-            >
-              <Icon name={ct.icon} className="w-3.5 h-3.5" />
-              <span>{ct.label}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Visual iteration takes over the panel when a visual box is selected */}
@@ -638,9 +615,9 @@ function VisualPanel() {
       )}
 
       {/* Dynamic panel based on content type */}
-      {(activeContentType === 'article' || activeContentType === 'book') && <OutlinePanel />}
+      {['article', 'whitepaper', 'course', 'book'].includes(activeContentType) && <OutlinePanel />}
       {activeContentType === 'book' && <BookOutlinePanel />}
-      {activeContentType === 'social' && <SocialPostPanel />}
+      {activeContentType === 'post' && <SocialPostPanel />}
 
       {/* Draft Management Panel */}
       {showDrafts && <DraftManagementPanel />}
